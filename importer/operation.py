@@ -113,6 +113,8 @@ class Import:
                 os.remove(source_path)
             else:
                 shutil.move(src=source_path, dst=dest_path)
+                if os.path.exists('/usr/sbin/restorecon'):
+                    processor.run_proc_foreground_shell('/usr/sbin/restorecon {dest_path}')
 
 class SrpmImport(Import):
     """
