@@ -84,6 +84,17 @@ class ErrorConstants:
     MOCK_ERR_UNEXPECTED = 9198
     # Generic error
     MOCK_ERR_GENERIC = 9199
+    # Git Generic Error
+    GIT_ERR_GENERAL = 9300
+    GIT_ERR_COMMIT = 9301
+    GIT_ERR_PUSH = 9302
+    GIT_ERR_INIT = 9303
+    GIT_ERR_CHECKOUT = 9304
+
+    # RPM errors
+    RPM_ERR_OPEN = 9400
+    RPM_ERR_SIG = 9401
+    RPM_ERR_INFO = 9402
 
 # pylint: disable=too-few-public-methods
 class MockConstants:

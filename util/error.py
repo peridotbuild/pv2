@@ -116,3 +116,47 @@ class MockSignalReceivedError(MockGenericError):
     Mock had a SIG received
     """
     fault_code = errconst.MOCK_ERR_BUILD_HUP
+
+class GitCommitError(GenericError):
+    """
+    There was an issue pushing to git
+    """
+    fault_code = errconst.GIT_ERR_COMMIT
+
+class GitPushError(GenericError):
+    """
+    There was an issue pushing to git
+    """
+    fault_code = errconst.GIT_ERR_PUSH
+
+class GitInitError(GenericError):
+    """
+    There was an issue pushing to git
+    """
+    fault_code = errconst.GIT_ERR_INIT
+
+class GitCheckoutError(GenericError):
+    """
+    There was an issue pushing to git
+    """
+    fault_code = errconst.GIT_ERR_CHECKOUT
+
+class RpmOpenError(GenericError):
+    """
+    There was an issue opening the RPM
+    """
+    fault_code = errconst.RPM_ERR_OPEN
+
+class RpmSigError(GenericError):
+    """
+    There was an issue opening the RPM because the signature could not be
+    verified
+    """
+    fault_code = errconst.RPM_ERR_SIG
+
+class RpmInfoError(GenericError):
+    """
+    There was an issue opening the RPM because the signature could not be
+    verified
+    """
+    fault_code = errconst.RPM_ERR_INFO

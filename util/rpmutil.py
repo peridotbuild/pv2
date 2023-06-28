@@ -28,14 +28,16 @@ __all__ = [
         'get_exclu_from_package',
         'get_rpm_hdr_size',
         'split_rpm_by_header',
-        'get_all_rpm_header_keys'
+        'get_all_rpm_header_keys',
+        'verify_rpm_signature',
+        'add_rpm_key'
 ]
 
 # NOTES TO THOSE RUNNING PYLINT OR ANOTHER TOOL
 #
 # It is normal that your linter will say that "rpm" does not have some sort of
 # RPMTAG member or otherwise. You will find when you run this module in normal
-# circumstances, everything is returned as normal. You are free to ignore all
+# circumstances, everything is returned as normal. You are free to ignore those
 # linting errors.
 
 def is_debug_package(file_name: str) -> bool:
@@ -57,7 +59,7 @@ def is_debug_package(file_name: str) -> bool:
 
     return bool(re.search(r'-debug(info|source)', file_name))
 
-def get_rpm_header(file_name: str):
+def get_rpm_header(file_name: str, verify_signature: bool = False):
     """
     Gets RPM header metadata. This is a vital component to getting RPM
     information for usage later.
@@ -69,11 +71,18 @@ def get_rpm_header(file_name: str):
         raise err.GenericError("You must have the rpm python bindings installed")
 
     trans_set = rpm.TransactionSet()
-    # this is harmless.
-    # pylint: disable=protected-access
-    trans_set.setVSFlags(rpm._RPMVSF_NOSIGNATURES | rpm._RPMVSF_NODIGESTS)
+    if not verify_signature:
+        # this is harmless.
+        # pylint: disable=protected-access
+        trans_set.setVSFlags(rpm._RPMVSF_NOSIGNATURES | rpm._RPMVSF_NODIGESTS)
+
     with open(file_name, 'rb') as rpm_package:
-        hdr = trans_set.hdrFromFdno(rpm_package)
+        try:
+            hdr = trans_set.hdrFromFdno(rpm_package)
+        # pylint: disable=no-member
+        except rpm.error as exc:
+            print(exc)
+            raise err.RpmOpenError('RPM could not be opened: Public key is not available.')
     return hdr
 
 # pylint: disable=too-many-locals
@@ -196,6 +205,7 @@ def get_rpm_metadata_from_hdr(hdr) -> dict:
             'release': generic.to_unicode(header_data[rpm.RPMTAG_RELEASE]),
             'epoch': found_epoch,
             'arch': pkg_arch,
+            'signature': header_data[rpm.RPMTAG_RSAHEADER],
     }
     for key, rpmkey, in (('archivesize', rpm.RPMTAG_ARCHIVESIZE),
                          ('packagesize', rpm.RPMTAG_SIZE)):
@@ -355,3 +365,34 @@ def quick_bump(file_name: str, user: str, comment: str):
     bumprel = ['rpmdev-bumpspec', '-D', '-u', user, '-c', comment, file_name]
     success = processor.run_check_call(bumprel)
     return success
+
+def verify_rpm_signature(file_name: str) -> bool:
+    """
+    Returns a boolean on if the RPM signature can be verified by what is
+    currently imported into the RPM keyring.
+    """
+    trans_set = rpm.TransactionSet()
+    with open(file_name, 'rb') as rpm_package:
+        try:
+            trans_set.hdrFromFdno(rpm_package)
+        # pylint: disable=bare-except
+        except:
+            return False
+    return True
+
+def add_rpm_key(file_name: str):
+    """
+    Adds a RPM signing signature to the keyring
+    """
+    with open(file_name, 'rb') as key:
+        keydata = key.read()
+        keydata.close()
+
+    try:
+        # pylint: disable=no-member
+        pubkey = rpm.pubkey(keydata)
+        keyring = rpm.keyring()
+        keyring.addKey(pubkey)
+    # pylint: disable=no-member
+    except rpm.error as exc:
+        raise err.RpmSigError(f'Unable to import signature: {exc}')

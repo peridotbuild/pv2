@@ -3,6 +3,7 @@ Generic functions
 """
 import datetime
 import hashlib
+from urllib.parse import quote as urlquote
 from pv2.util import error as err
 
 # General utilities
@@ -76,3 +77,12 @@ def generate_password_hash(password: str, salt: str, hashtype: str = 'sha256') -
     hasher = hashlib.new(hashtype)
     hasher.update((salt + password).encode('utf-8'))
     return str(hasher.hexdigest())
+
+def safe_encoding(data: str) -> str:
+    """
+    Does url quoting for safe encoding
+    """
+    quoter = urlquote(data)
+    # the urllib library currently doesn't reserve this
+    quoter = quoter.replace('~', '%7e')
+    return quoter

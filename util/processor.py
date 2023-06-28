@@ -24,6 +24,19 @@ def run_proc_foreground(command: list):
 
     return processor
 
+def run_proc_foreground_shell(command: str):
+    """
+    Takes in the command in the form of a list and runs it via subprocess.
+    Everything should be in the foreground. The return is just for the exit
+    code.
+    """
+    try:
+        processor = subprocess.run(args=command, shell=True, check=False)
+    except Exception as exc:
+        raise err.GenericError(f'There was an error with your command: {exc}')
+
+    return processor
+
 def run_proc_no_output(command: list):
     """
     Output will be stored in stdout and stderr as needed.
@@ -41,6 +54,26 @@ def run_proc_no_output(command: list):
         raise err.GenericError(f'There was an error with your command: {exc}')
 
     return processor
+
+def run_proc_no_output_shell(command: str):
+    """
+    Output will be stored in stdout and stderr as needed.
+    """
+    try:
+        if sys.version_info <= (3, 6):
+            processor = subprocess.run(args=command, check=False,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       universal_newlines=True,
+                                       shell=True)
+        else:
+            processor = subprocess.run(args=command, check=False, capture_output=True,
+                                       text=True, shell=True)
+    except Exception as exc:
+        raise err.GenericError(f'There was an error with your command: {exc}')
+
+    return processor
+
 
 def popen_proc_no_output(command: list):
     """
