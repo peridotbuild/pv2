@@ -206,7 +206,7 @@ class SrpmImport(Import):
             print('Repo may not exist or is private. Try to import anyway.')
             repo = gitutil.init(
                     git_url_path=self.git_url,
-                    repo_name=self.rpm_name,
+                    repo_name=self.rpm_name_replace,
                     to_path=git_repo_path,
                     branch=branch
             )
