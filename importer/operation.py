@@ -114,7 +114,7 @@ class Import:
             else:
                 shutil.move(src=source_path, dst=dest_path)
                 if os.path.exists('/usr/sbin/restorecon'):
-                    processor.run_proc_foreground_shell('/usr/sbin/restorecon {dest_path}')
+                    processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
 
 class SrpmImport(Import):
     """
@@ -178,6 +178,13 @@ class SrpmImport(Import):
         git_repo_path = f'/var/tmp/{self.rpm_name}'
         branch = self.__branch
         repo_tags = []
+
+        # We need to determine if this package has a modularity label. If it
+        # does, we need to augment the branch name.
+        if len(self.__srpm_metadata['modularitylabel']) > 0:
+            stream_version = self.__srpm_metadata['modularitylabel'].split(':')[1]
+            branch = f'{self.__branch}-stream-{stream_version}'
+
         # If we return None, we need to assume that this is a brand new repo,
         # so we will try to set it up accordingly. If we return refs, we'll see
         # if the branch we want to work with exists. If it does not exist,

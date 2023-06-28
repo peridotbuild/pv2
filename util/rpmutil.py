@@ -184,6 +184,11 @@ def get_rpm_metadata_from_hdr(hdr) -> dict:
     if not found_epoch:
         found_epoch = ''
 
+    # This avoids the modularity label being None or 'None' in the dict.
+    found_modularitylabel = header_data[rpm.RPMTAG_MODULARITYLABEL]
+    if not found_modularitylabel:
+        found_modularitylabel = ''
+
     metadata = {
             'changelog_xml': changelog_result,
             'files': file_stuff['file'],
@@ -205,6 +210,7 @@ def get_rpm_metadata_from_hdr(hdr) -> dict:
             'release': generic.to_unicode(header_data[rpm.RPMTAG_RELEASE]),
             'epoch': found_epoch,
             'arch': pkg_arch,
+            'modularitylabel': found_modularitylabel,
             'signature': header_data[rpm.RPMTAG_RSAHEADER],
     }
     for key, rpmkey, in (('archivesize', rpm.RPMTAG_ARCHIVESIZE),
