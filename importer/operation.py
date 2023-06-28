@@ -185,6 +185,7 @@ class SrpmImport(Import):
             ref_check = f'refs/heads/{branch}' in check_repo
             # if our check is correct, clone it. if not, clone normally and
             # orphan.
+            print(f'Cloning: {self.rpm_name}')
             if ref_check:
                 repo = gitutil.clone(
                         git_url_path=self.git_url,
