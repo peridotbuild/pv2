@@ -224,6 +224,7 @@ class SrpmImport(Import):
         # Raise an error if the tag already exists. Force the importer to tag
         # manually.
         if import_tag in repo_tags:
+            shutil.rmtree(git_repo_path)
             raise err.GitCommitError(f'Git tag already exists: {import_tag}')
 
         verify = repo.is_dirty()
@@ -231,11 +232,13 @@ class SrpmImport(Import):
             gitutil.commit(repo, commit_msg)
             ref = gitutil.tag(repo, import_tag, commit_msg)
             gitutil.push(repo, ref=ref)
+            shutil.rmtree(git_repo_path)
             return True
 
         # The most recent commit is assumed to be tagged also. We will not
         # push. Force the importer to tag manually.
         print('Nothing to push')
+        shutil.rmtree(git_repo_path)
         return False
 
     @property
