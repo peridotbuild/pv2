@@ -211,21 +211,21 @@ class SrpmImport(Import):
                     branch=branch
             )
 
+        # pylint: disable=line-too-long
+        import_tag = generic.safe_encoding(f'imports/{branch}/{self.rpm_name}-{self.rpm_version}-{self.rpm_release}')
+        commit_msg = f'import {self.rpm_name}-{self.rpm_version}-{self.rpm_release}'
+        # Raise an error if the tag already exists. Force the importer to tag
+        # manually.
+        if import_tag in repo_tags:
+            shutil.rmtree(git_repo_path)
+            raise err.GitCommitError(f'Git tag already exists: {import_tag}')
+
         self.unpack_srpm(self.srpm_path, git_repo_path)
         sources = self.get_dict_of_lookaside_files(git_repo_path)
         self.generate_metadata(git_repo_path, self.rpm_name, sources)
         self.generate_filesum(git_repo_path, self.rpm_name, self.srpm_hash)
         self.import_lookaside(git_repo_path, self.rpm_name, branch, sources)
         gitutil.add_all(repo)
-        # pylint: disable=line-too-long
-        import_tag = generic.safe_encoding(f'imports/{branch}/{self.rpm_name}-{self.rpm_version}-{self.rpm_release}')
-        commit_msg = f'import {self.rpm_name}-{self.rpm_version}-{self.rpm_release}'
-
-        # Raise an error if the tag already exists. Force the importer to tag
-        # manually.
-        if import_tag in repo_tags:
-            shutil.rmtree(git_repo_path)
-            raise err.GitCommitError(f'Git tag already exists: {import_tag}')
 
         verify = repo.is_dirty()
         if verify:
