@@ -68,7 +68,7 @@ class Import:
         came from.
         """
         with open(f'{repo_path}/.{repo_name}.checksum', 'w+', encoding='utf-8') as checksum:
-            checksum.write(srpm_hash)
+            checksum.write(f'{srpm_hash}\n')
             checksum.close()
 
     @staticmethod
