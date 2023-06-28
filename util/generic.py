@@ -82,7 +82,7 @@ def safe_encoding(data: str) -> str:
     """
     Does url quoting for safe encoding
     """
-    quoter = urlquote(data)
+    quoter = urlquote(data, safe='/+')
     # the urllib library currently doesn't reserve this
     quoter = quoter.replace('~', '%7e')
     return quoter
