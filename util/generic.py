@@ -8,13 +8,13 @@ from pv2.util import error as err
 
 # General utilities
 __all__ = [
-        'ordered',
         'conv_multibyte',
-        'to_unicode',
         'convert_from_unix_time',
-        'trim_non_empty_string',
         'gen_bool_option',
-        'generate_password_hash'
+        'generate_password_hash',
+        'ordered',
+        'to_unicode',
+        'trim_non_empty_string'
 ]
 
 def to_unicode(string: str) -> str:

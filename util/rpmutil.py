@@ -19,18 +19,18 @@ except ImportError:
     rpm = None
 
 __all__ = [
-        'is_debug_package',
+        'add_rpm_key',
+        'compare_rpms',
+        'get_all_rpm_header_keys',
+        'get_exclu_from_package',
+        'get_files_from_package',
+        'get_rpm_hdr_size',
         'get_rpm_header',
         'get_rpm_metadata_from_hdr',
-        'compare_rpms',
+        'is_debug_package',
         'is_rpm',
-        'get_files_from_package',
-        'get_exclu_from_package',
-        'get_rpm_hdr_size',
         'split_rpm_by_header',
-        'get_all_rpm_header_keys',
-        'verify_rpm_signature',
-        'add_rpm_key'
+        'verify_rpm_signature'
 ]
 
 # NOTES TO THOSE RUNNING PYLINT OR ANOTHER TOOL
@@ -336,13 +336,19 @@ def split_rpm_by_header(hdr) -> tuple:
 
     Note: Splitting a source package will result in an erroneous "arch" field.
     """
-
     # pylint: disable=no-member
+    source_files = hdr[rpm.RPMTAG_SOURCE]
+    source_pkg = hdr[rpm.RPMTAG_SOURCERPM]
+    pkg_arch = generic.to_unicode(hdr[rpm.RPMTAG_ARCH])
+
+    if len(source_files) != 0 or not source_pkg:
+        pkg_arch = 'src'
+
     name = hdr[rpm.RPMTAG_NAME]
     version = hdr[rpm.RPMTAG_VERSION]
     release = hdr[rpm.RPMTAG_RELEASE]
     epoch = hdr[rpm.RPMTAG_EPOCH]
-    arch = hdr[rpm.RPMTAG_ARCH]
+    arch = pkg_arch
 
     if not epoch:
         epoch = ''

@@ -116,6 +116,17 @@ class Import:
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
 
+    @staticmethod
+    def skip_import_lookaside(repo_path: str, file_dict: dict):
+        """
+        Removes all files that are supposed to go to the lookaside. This is for
+        cases where you may have sources in another location, you just want the
+        metadata filled out appropriately.
+        """
+        for name, _ in file_dict.items():
+            source_path = f'{repo_path}/{name}'
+            os.remove(source_path)
+
 class SrpmImport(Import):
     """
     Import class for importing rpms to a git service
@@ -170,9 +181,12 @@ class SrpmImport(Import):
 
         return None
 
-    def pkg_import(self):
+    def pkg_import(self, skip_lookaside: bool = False):
         """
         Actually perform the import
+
+        If skip_lookaside is True, source files will just be deleted rather
+        than uploaded to lookaside.
         """
         check_repo = gitutil.lsremote(self.git_url)
         git_repo_path = f'/var/tmp/{self.rpm_name}'
@@ -234,7 +248,12 @@ class SrpmImport(Import):
         sources = self.get_dict_of_lookaside_files(git_repo_path)
         self.generate_metadata(git_repo_path, self.rpm_name, sources)
         self.generate_filesum(git_repo_path, self.rpm_name, self.srpm_hash)
-        self.import_lookaside(git_repo_path, self.rpm_name, branch, sources)
+
+        if skip_lookaside:
+            self.skip_import_lookaside(git_repo_path, sources)
+        else:
+            self.import_lookaside(git_repo_path, self.rpm_name, branch, sources)
+
         gitutil.add_all(repo)
 
         verify = repo.is_dirty()
