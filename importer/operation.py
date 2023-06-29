@@ -12,7 +12,8 @@ from pv2.util import error as err
 
 __all__ = [
         'Import',
-        'SrpmImport'
+        'SrpmImport',
+        'GitImport'
 ]
 # todo: add in logging and replace print with log
 
@@ -77,11 +78,12 @@ class Import:
         Returns a dict of files that are part of sources and are binary.
         """
         source_dict = {}
-        for file in os.scandir(f'{local_repo_path}/SOURCES'):
-            full_path = f'{local_repo_path}/SOURCES/{file.name}'
-            magic = fileutil.get_magic_file(full_path)
-            if magic.encoding == 'binary':
-                source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
+        if os.path.exists(f'{local_repo_path}/SOURCES'):
+            for file in os.scandir(f'{local_repo_path}/SOURCES'):
+                full_path = f'{local_repo_path}/SOURCES/{file.name}'
+                magic = fileutil.get_magic_file(full_path)
+                if magic.encoding == 'binary':
+                    source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
 
         return source_dict
 
@@ -332,3 +334,8 @@ class SrpmImport(Import):
         """
         new_name = self.__srpm_metadata['name'].replace('+', 'plus')
         return new_name
+
+class GitImport(Import):
+    """
+    Import class for importing from git (e.g. pagure or gitlab)
+    """
