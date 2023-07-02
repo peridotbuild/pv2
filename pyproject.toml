@@ -1,18 +1,16 @@
 [project]
 name = "pv2"
 version = "0.9.1"
-
+description = "PV2 backend framework module"
+readme = "README.md"
 authors = [
-  "Louis Abel <label@rockylinux.org>"
+  { name = "Louis Abel", email = "label@rockylinux.org" }
 ]
 
 maintainers = [
-  "Louis Abel <label@rockylinux.org>"
+  { name = "Louis Abel", email = "label@rockylinux.org" }
 ]
 
-description = "PV2 backend framework module"
-readme = "README.md"
-license = "MIT"
 requires-python = ">=3.6"
 
 dependencies = [
@@ -25,3 +23,9 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/peridotbuild/pv2"
 "Bug Tracker" = "https://github.com/peridotbuild/pv2/issues"
+
+[project.license]
+file = "LICENSE"
+
+[tool.setuptools]
+package-dir = { "pv2" = "pv2" }

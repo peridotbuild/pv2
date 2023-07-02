@@ -132,6 +132,9 @@ class Import:
 class SrpmImport(Import):
     """
     Import class for importing rpms to a git service
+
+    Note that this imports *as is*. This means you cannot control which branch
+    nor the release tag that shows up.
     """
     # pylint: disable=too-many-arguments
     def __init__(
@@ -140,6 +143,7 @@ class SrpmImport(Import):
             srpm_path: str,
             release: str = '',
             branch: str = '',
+            distprefix: str = 'el',
             git_user: str = 'git',
             org: str = 'rpms',
             verify_signature: bool = False
@@ -155,6 +159,7 @@ class SrpmImport(Import):
         self.__srpm_metadata = self.get_srpm_metadata(srpm_path,
                                                       verify_signature)
         self.__release = release
+        self.__dist_prefix = distprefix
 
         pkg_name = self.__srpm_metadata['name']
         git_url = f'ssh://{git_user}@{git_url_path}/{org}/{pkg_name}.git'
@@ -175,7 +180,7 @@ class SrpmImport(Import):
         """
         Gets the release version from the srpm
         """
-        regex = r'.el(\d+)'
+        regex = fr'.{self.distprefix}(\d+)'
         dist_tag = self.__srpm_metadata['release']
         regex_search = re.search(regex, dist_tag)
         if regex_search:
@@ -335,7 +340,54 @@ class SrpmImport(Import):
         new_name = self.__srpm_metadata['name'].replace('+', 'plus')
         return new_name
 
+    @property
+    def distprefix(self):
+        """
+        Returns the distprefix value
+        """
+        return self.__dist_prefix
+
 class GitImport(Import):
     """
     Import class for importing from git (e.g. pagure or gitlab)
+
+    This attempts to look at a git repo that was cloned and check for either a
+    metadata file or a sources file. After that, it will make a best effort
+    guess on how to convert it and push it to your git forge with an expected
+    format.
     """
+    # pylint: disable=too-many-arguments
+    def __init__(
+            self,
+            package: str,
+            source_git_url_path: str,
+            source_git_org_path: str,
+            git_url_path: str,
+            release: str,
+            branch: str,
+            distprefix: str = 'el',
+            git_user: str = 'git',
+            org: str = 'rpms',
+            verify_signature: bool = False
+    ):
+        """
+        Init the class.
+
+        Set the org to something else if needed. Note that if you are using
+        subgroups, do not start with a leading slash (e.g. some_group/rpms)
+        """
+        self.__rpm = package
+        self.__release = release
+        source_git_url = f'https://{source_git_url_path}/{source_git_org_path}/{package}.git'
+        git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package}.git'
+        self.__git_url = git_url
+        self.__dist_prefix = distprefix
+        self.__dist_tag = f'.{distprefix}{release}'
+        self.__branch = branch
+
+    @property
+    def rpm_name(self):
+        """
+        Returns the name of the RPM we're working with
+        """
+        return self.__rpm
