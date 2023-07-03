@@ -9,6 +9,7 @@ import re
 import shutil
 from pv2.util import gitutil, fileutil, rpmutil, processor, generic
 from pv2.util import error as err
+from pv2.util import constants as const
 
 __all__ = [
         'Import',
@@ -99,12 +100,18 @@ class Import:
         return metadata
 
     @staticmethod
-    def import_lookaside(repo_path: str, repo_name: str, branch: str, file_dict: dict):
+    def import_lookaside(
+            repo_path: str,
+            repo_name: str,
+            branch: str,
+            file_dict: dict,
+            dest_lookaside: str = '/var/www/html/sources'
+    ):
         """
         Attempts to move the lookaside files if they don't exist to their
         hashed name.
         """
-        dest_dir = f'/var/www/html/sources/{repo_name}/{branch}'
+        dest_dir = f'{dest_lookaside}/{repo_name}/{branch}'
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir, 0o755)
         for name, sha in file_dict.items():
@@ -129,6 +136,7 @@ class Import:
             source_path = f'{repo_path}/{name}'
             os.remove(source_path)
 
+# pylint: disable=too-many-instance-attributes
 class SrpmImport(Import):
     """
     Import class for importing rpms to a git service
@@ -146,6 +154,7 @@ class SrpmImport(Import):
             distprefix: str = 'el',
             git_user: str = 'git',
             org: str = 'rpms',
+            dest_lookaside: str = '/var/www/html/sources',
             verify_signature: bool = False
     ):
         """
@@ -160,6 +169,7 @@ class SrpmImport(Import):
                                                       verify_signature)
         self.__release = release
         self.__dist_prefix = distprefix
+        self.__dest_lookaside = dest_lookaside
 
         pkg_name = self.__srpm_metadata['name']
         git_url = f'ssh://{git_user}@{git_url_path}/{org}/{pkg_name}.git'
@@ -259,7 +269,8 @@ class SrpmImport(Import):
         if skip_lookaside:
             self.skip_import_lookaside(git_repo_path, sources)
         else:
-            self.import_lookaside(git_repo_path, self.rpm_name, branch, sources)
+            self.import_lookaside(git_repo_path, self.rpm_name, branch,
+                                  sources, self.dest_lookaside)
 
         gitutil.add_all(repo)
 
@@ -347,6 +358,14 @@ class SrpmImport(Import):
         """
         return self.__dist_prefix
 
+    @property
+    def dest_lookaside(self):
+        """
+        Returns the destination path for the local lookaside
+        """
+        return self.__dest_lookaside
+
+# pylint: disable=too-many-instance-attributes
 class GitImport(Import):
     """
     Import class for importing from git (e.g. pagure or gitlab)
@@ -365,10 +384,12 @@ class GitImport(Import):
             git_url_path: str,
             release: str,
             branch: str,
+            upstream_lookaside: str = '',
+            dest_lookaside: str = '/var/www/html/sources',
+            dest_branch: str = '',
             distprefix: str = 'el',
             git_user: str = 'git',
-            org: str = 'rpms',
-            verify_signature: bool = False
+            org: str = 'rpms'
     ):
         """
         Init the class.
@@ -378,12 +399,49 @@ class GitImport(Import):
         """
         self.__rpm = package
         self.__release = release
-        source_git_url = f'https://{source_git_url_path}/{source_git_org_path}/{package}.git'
-        git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package}.git'
-        self.__git_url = git_url
+        self.__source_git_url = f'https://{source_git_url_path}/{source_git_org_path}/{package}.git'
+        self.__git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
         self.__branch = branch
+        self.__dest_branch = branch
+        self.__dest_lookaside = dest_lookaside
+        self.__upstream_lookaside = upstream_lookaside
+
+        if len(dest_branch) > 0:
+            self.__dest_branch = dest_branch
+
+    def pkg_import(self, skip_lookaside: bool = False):
+        """
+        Actually perform the import
+
+        If skip_lookaside is True, source files will just be deleted rather
+        than uploaded to lookaside.
+        """
+        check_source_repo = gitutil.lsremote(self.source_git_url)
+        check_dest_repo = gitutil.lsremote(self.source_git_url)
+        source_git_repo_path = f'/var/tmp/{self.rpm_name}-source'
+        dest_git_repo_path = f'/var/tmp/{self.rpm_name}'
+        source_branch = self.source_branch
+        dest_branch = self.dest_branch
+        repo_tags = []
+
+    @staticmethod
+    def __get_lookaside_template_path(source):
+        """
+        Attempts to return the lookaside template
+        """
+        # This is an extremely hacky way to return the right value. In python
+        # 3.10, match-case was introduced. However, we need to assume that
+        # python 3.9 is the lowest used version for this module, so we need to
+        # be inefficient until we no longer use EL9 as the base line.
+        return {
+                'rocky8': const.GitConstants.ROCKY8_LOOKASIDE_PATH,
+                'rocky': const.GitConstants.ROCKY_LOOKASIDE_PATH,
+                'centos': const.GitConstants.CENTOS_LOOKASIDE_PATH,
+                'stream': const.GitConstants.STREAM_LOOKASIDE_PATH,
+                'fedora': const.GitConstants.FEDORA_LOOKASIDE_PATH,
+                }.get(source, None)
 
     @property
     def rpm_name(self):
@@ -391,3 +449,45 @@ class GitImport(Import):
         Returns the name of the RPM we're working with
         """
         return self.__rpm
+
+    @property
+    def source_branch(self):
+        """
+        Returns the starting branch
+        """
+        return self.__branch
+
+    @property
+    def dest_branch(self):
+        """
+        Returns the starting branch
+        """
+        return self.__dest_branch
+
+    @property
+    def source_git_url(self):
+        """
+        Returns the source git url
+        """
+        return self.__source_git_url
+
+    @property
+    def dest_git_url(self):
+        """
+        Returns the destination git url
+        """
+        return self.__git_url
+
+    @property
+    def dist_tag(self):
+        """
+        Returns the dist tag
+        """
+        return self.__dist_tag
+
+    @property
+    def dest_lookaside(self):
+        """
+        Returns destination local lookaside
+        """
+        return self.__dest_lookaside

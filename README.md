@@ -20,3 +20,8 @@ in the RESF (such as Rocky Linux).
   * GitPython (python3-GitPython or via pip)
   * lxml (python3-lxml or via pip)
   * rpm (python3-rpm)
+
+## Example Scripts
+
+Example scripts are found in the `examples` directory, which can utilize
+parts of the pv2 module.

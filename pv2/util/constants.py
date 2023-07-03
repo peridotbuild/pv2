@@ -6,7 +6,8 @@ All constants
 __all__ = [
         'RpmConstants',
         'ErrorConstants',
-        'MockConstants'
+        'MockConstants',
+        'GitConstants'
 ]
 
 # pylint: disable=too-few-public-methods
@@ -177,3 +178,15 @@ class MockConstants:
     MOCK_EXIT_SIGHUP_RECEIVED = 129
     MOCK_EXIT_SIGPIPE_RECEIVED = 141
     MOCK_EXIT_SIGTERM_RECEIVED = 143
+
+class GitConstants:
+    """
+    All git related constants
+    """
+
+    CENTOS_LOOKASIDE_PATH = 'https://git.centos.org/sources/${PKG_NAME}/${BRANCH}/${HASH}'
+    # pylint: disable=line-too-long
+    STREAM_LOOKASIDE_PATH = 'https://sources.stream.centos.org/sources/rpms/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${FILENAME}'
+    FEDORA_LOOKASIDE_PATH = 'https://src.fedoraproject.org/repo/pkgs/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${FILENAME}'
+    ROCKY8_LOOKASIDE_PATH = 'https://rocky-linux-sources-staging.a1.rockylinux.org/${HASH}'
+    ROCKY_LOOKASIDE_PATH = 'https://sources.build.resf.org/${HASH}'
