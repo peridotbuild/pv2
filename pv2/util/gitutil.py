@@ -57,6 +57,7 @@ def clone(
     clone a repo. if branch is None, it will just clone the repo in general and
     you'll be expected to checkout.
     """
+    clone_path = to_path
     if not to_path:
         clone_path = f'/var/tmp/{repo_name}'
 

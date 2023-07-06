@@ -16,6 +16,7 @@ __all__ = [
         'MissingValueError',
         'ConfigurationError',
         'FileNotFound',
+        'DownloadError',
         'MockGenericError',
         'MockUnexpectedError',
         'MockInvalidConfError',
@@ -74,6 +75,12 @@ class FileNotFound(GenericError):
     Value being requested already exists
     """
     fault_code = errconst.ERR_NOTFOUND
+
+class DownloadError(GenericError):
+    """
+    Value being requested already exists
+    """
+    fault_code = errconst.ERR_DOWNLOAD
 
 class MockGenericError(GenericError):
     """

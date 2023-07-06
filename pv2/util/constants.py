@@ -55,6 +55,7 @@ class ErrorConstants:
     ERR_MISSING_VALUE = 9003
     ERR_CONFIGURATION = 9004
     ERR_NOTFOUND = 9005
+    ERR_DOWNLOAD = 9006
     # Error in spec file
     MOCK_ERR_SPEC = 9100
     # Error trying to get dependencies for a build
@@ -186,7 +187,7 @@ class GitConstants:
 
     CENTOS_LOOKASIDE_PATH = 'https://git.centos.org/sources/${PKG_NAME}/${BRANCH}/${HASH}'
     # pylint: disable=line-too-long
-    STREAM_LOOKASIDE_PATH = 'https://sources.stream.centos.org/sources/rpms/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${FILENAME}'
-    FEDORA_LOOKASIDE_PATH = 'https://src.fedoraproject.org/repo/pkgs/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${FILENAME}'
+    STREAM_LOOKASIDE_PATH = 'https://sources.stream.centos.org/sources/rpms/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${HASH}/${FILENAME}'
+    FEDORA_LOOKASIDE_PATH = 'https://src.fedoraproject.org/repo/pkgs/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${HASH}/${FILENAME}'
     ROCKY8_LOOKASIDE_PATH = 'https://rocky-linux-sources-staging.a1.rockylinux.org/${HASH}'
     ROCKY_LOOKASIDE_PATH = 'https://sources.build.resf.org/${HASH}'

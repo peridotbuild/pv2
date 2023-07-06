@@ -1,6 +1,6 @@
 [project]
 name = "pv2"
-version = "0.9.1"
+version = "0.9.2"
 description = "PV2 backend framework module"
 readme = "README.md"
 authors = [
@@ -16,7 +16,8 @@ requires-python = ">=3.6"
 dependencies = [
   "GitPython >= 3.1.30",
   "lxml >= 4.6.5",
-  "file-magic >= 0.4.0"
+  "file-magic >= 0.4.0",
+  "pycurl >= 7.43.0.6"
 ]
 
 [project.urls]

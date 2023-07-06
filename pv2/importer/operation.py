@@ -7,6 +7,7 @@ Importer accessories
 import os
 import re
 import shutil
+import string
 from pv2.util import gitutil, fileutil, rpmutil, processor, generic
 from pv2.util import error as err
 from pv2.util import constants as const
@@ -51,6 +52,31 @@ class Import:
         ]
         command_to_send = ' '.join(command_to_send)
         processor.run_proc_no_output_shell(command_to_send)
+
+    @staticmethod
+    def pack_srpm(srpm_dir, spec_file, dist_tag):
+        """
+        Packs an srpm from available sources
+        """
+        command_to_send = [
+                'rpmbuild',
+                '-bs',
+                f'{spec_file}',
+                '--define',
+                f"'dist {dist_tag}'",
+                '--define',
+                f"'_topdir {srpm_dir}'",
+                '--define',
+                f"'_sourcedir {srpm_dir}'"
+        ]
+        command_to_send = ' '.join(command_to_send)
+        returned = processor.run_proc_no_output_shell(command_to_send)
+        wrote_regex = r'Wrote:\s+(.*\.rpm)'
+        regex_search = re.search(wrote_regex, returned.stdout, re.MULTILINE)
+        if regex_search:
+            return regex_search.group(1)
+
+        return None
 
     @staticmethod
     def generate_metadata(repo_path: str, repo_name: str, file_dict: dict):
@@ -135,6 +161,53 @@ class Import:
         for name, _ in file_dict.items():
             source_path = f'{repo_path}/{name}'
             os.remove(source_path)
+
+    @staticmethod
+    def get_lookaside_template_path(source):
+        """
+        Attempts to return the lookaside template
+        """
+        # This is an extremely hacky way to return the right value. In python
+        # 3.10, match-case was introduced. However, we need to assume that
+        # python 3.9 is the lowest used version for this module, so we need to
+        # be inefficient until we no longer use EL9 as the base line.
+        return {
+                'rocky8': const.GitConstants.ROCKY8_LOOKASIDE_PATH,
+                'rocky': const.GitConstants.ROCKY_LOOKASIDE_PATH,
+                'centos': const.GitConstants.CENTOS_LOOKASIDE_PATH,
+                'stream': const.GitConstants.STREAM_LOOKASIDE_PATH,
+                'fedora': const.GitConstants.FEDORA_LOOKASIDE_PATH,
+        }.get(source, None)
+
+    @staticmethod
+    def parse_metadata_file(metadata_file) -> dict:
+        """
+        Attempts to loop through the metadata file
+        """
+        file_dict = {}
+        # pylint: disable=line-too-long
+        line_pattern = re.compile(r'^(?P<hashtype>[^ ]+?) \((?P<file>[^ )]+?)\) = (?P<checksum>[^ ]+?)$')
+        classic_pattern = re.compile(r'^(?P<checksum>[^ ]+?)\s+(?P<file>[^ ]+?)$')
+        with open(metadata_file, encoding='UTF-8') as metafile:
+            for line in metafile:
+                strip = line.strip()
+                if not strip:
+                    continue
+
+                line_check = line_pattern.match(strip)
+                classic_check = classic_pattern.match(strip)
+                if line_check is not None:
+                    file_dict[line_check.group('file')] = {
+                            'hashtype': line_check.group('hashtype'),
+                            'checksum': line_check.group('checksum')
+                    }
+                elif classic_check is not None:
+                    file_dict[classic_check.group('file')] = {
+                            'hashtype': generic.hash_checker(classic_check.group('checksum')),
+                            'checksum': classic_check.group('checksum')
+                    }
+
+        return file_dict
 
 # pylint: disable=too-many-instance-attributes
 class SrpmImport(Import):
@@ -375,7 +448,7 @@ class GitImport(Import):
     guess on how to convert it and push it to your git forge with an expected
     format.
     """
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-locals
     def __init__(
             self,
             package: str,
@@ -384,8 +457,11 @@ class GitImport(Import):
             git_url_path: str,
             release: str,
             branch: str,
-            upstream_lookaside: str = '',
+            upstream_lookaside: str,
+            scl_mode: bool = False,
+            scl_package: str = '',
             dest_lookaside: str = '/var/www/html/sources',
+            source_git_protocol: str = 'https',
             dest_branch: str = '',
             distprefix: str = 'el',
             git_user: str = 'git',
@@ -399,7 +475,8 @@ class GitImport(Import):
         """
         self.__rpm = package
         self.__release = release
-        self.__source_git_url = f'https://{source_git_url_path}/{source_git_org_path}/{package}.git'
+        # pylint: disable=line-too-long
+        self.__source_git_url = f'{source_git_protocol}://{source_git_url_path}/{source_git_org_path}/{package}.git'
         self.__git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
@@ -407,10 +484,15 @@ class GitImport(Import):
         self.__dest_branch = branch
         self.__dest_lookaside = dest_lookaside
         self.__upstream_lookaside = upstream_lookaside
+        self.__upstream_lookaside_url = self.get_lookaside_template_path(upstream_lookaside)
 
         if len(dest_branch) > 0:
             self.__dest_branch = dest_branch
 
+        if not self.__upstream_lookaside:
+            raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
+
+    # pylint: disable=too-many-locals
     def pkg_import(self, skip_lookaside: bool = False):
         """
         Actually perform the import
@@ -419,29 +501,177 @@ class GitImport(Import):
         than uploaded to lookaside.
         """
         check_source_repo = gitutil.lsremote(self.source_git_url)
-        check_dest_repo = gitutil.lsremote(self.source_git_url)
+        check_dest_repo = gitutil.lsremote(self.dest_git_url)
         source_git_repo_path = f'/var/tmp/{self.rpm_name}-source'
+        source_git_repo_spec = f'{source_git_repo_path}/{self.rpm_name}.spec'
         dest_git_repo_path = f'/var/tmp/{self.rpm_name}'
+        metadata_file = f'{source_git_repo_path}/.{self.rpm_name}.metadata'
+        sources_file = f'{source_git_repo_path}/sources'
         source_branch = self.source_branch
         dest_branch = self.dest_branch
+        _dist_tag = self.dist_tag
         repo_tags = []
 
+        # If the upstream repo doesn't report anything, exit.
+        if not check_source_repo:
+            raise err.GitInitError('Upstream git repo does not exist')
+
+        # If the source branch has "stream" in the name, it should be assumed
+        # it'll be a module. Since this should always be the case, we'll change
+        # dest_branch to be: {dest_branch}-stream-{stream_name}
+        if "stream" in source_branch:
+            dest_branch = self.__get_module_stream_branch_name(source_branch, dest_branch)
+            _dist_tag = f'.module+{_dist_tag}+1010+deadbeef'
+
+        # Do SCL logic here.
+
+        # Try to clone first
+        print(f'Cloning upstream: {self.rpm_name}')
+        source_repo = gitutil.clone(
+                git_url_path=self.source_git_url,
+                repo_name=self.rpm_name_replace,
+                to_path=source_git_repo_path,
+                branch=source_branch
+        )
+
+        if check_dest_repo:
+            ref_check = f'refs/heads/{dest_branch}' in check_dest_repo
+            print(f'Cloning: {self.rpm_name}')
+            if ref_check:
+                dest_repo = gitutil.clone(
+                        git_url_path=self.dest_git_url,
+                        repo_name=self.rpm_name_replace,
+                        to_path=dest_git_repo_path,
+                        branch=dest_branch
+                )
+            else:
+                dest_repo = gitutil.clone(
+                        git_url_path=self.dest_git_url,
+                        repo_name=self.rpm_name_replace,
+                        to_path=dest_git_repo_path,
+                        branch=None
+                )
+                gitutil.checkout(dest_repo, branch=dest_branch, orphan=True)
+            self.remove_everything(dest_repo.working_dir)
+            for tag_name in dest_repo.tags:
+                repo_tags.append(tag_name.name)
+        else:
+            print('Repo may not exist or is private. Try to import anyway.')
+            dest_repo = gitutil.init(
+                    git_url_path=self.dest_git_url,
+                    repo_name=self.rpm_name_replace,
+                    to_path=dest_git_repo_path,
+                    branch=dest_branch
+            )
+
+        # Within the confines of the source git repo, we need to find a
+        # "sources" file or a metadata file. One of these will determine which
+        # route we take.
+        if os.path.exists(metadata_file):
+            no_metadata_list = ['stream', 'fedora']
+            if any(ignore in self.upstream_lookaside for ignore in no_metadata_list):
+                # pylint: disable=line-too-long
+                raise err.ConfigurationError(f'metadata files are not supported with {self.upstream_lookaside}')
+            metafile_to_use = metadata_file
+        elif os.path.exists(sources_file):
+            no_sources_list = ['rocky', 'centos']
+            if any(ignore in self.upstream_lookaside for ignore in no_sources_list):
+                # pylint: disable=line-too-long
+                raise err.ConfigurationError(f'sources files are not supported with {self.upstream_lookaside}')
+            metafile_to_use = sources_file
+        else:
+            raise err.GenericError('sources or metadata file NOT found')
+
+        sources_dict = self.parse_metadata_file(metafile_to_use)
+
+        # We need to check if there is a SPECS directory and make a SOURCES
+        # directory if it doesn't exist
+        if os.path.exists(f'{source_git_repo_path}/SPECS'):
+            if not os.path.exists(f'{source_git_repo_path}/SOURCES'):
+                try:
+                    os.makedirs(f'{source_git_repo_path}/SOURCES')
+                except Exception as exc:
+                    raise err.GenericError(f'Directory could not be created: {exc}')
+
+        for key, value in sources_dict.items():
+            download_file = f'{source_git_repo_path}/{key}'
+            download_hashtype = sources_dict[key]['hashtype']
+            download_checksum = sources_dict[key]['checksum']
+            the_url = self.__get_actual_lookaside_url(
+                    download_file.split('/')[-1],
+                    download_hashtype,
+                    download_checksum
+            )
+
+            generic.download_file(the_url, download_file, download_checksum,
+                                  download_hashtype)
+
+        # attempt to pack up the RPM, get metadata
+        packed_srpm = self.pack_srpm(source_git_repo_path, source_git_repo_spec, _dist_tag)
+        if not packed_srpm:
+            raise err.MissingValueError(
+                    'The srpm was not written, yet command completed successfully.'
+            )
+        # We can't verify an srpm we just built ourselves.
+        srpm_metadata = self.get_srpm_metadata(packed_srpm, verify=False)
+        # pylint: disable=line-too-long
+        srpm_nvr = srpm_metadata['name'] + '-' + srpm_metadata['version'] + '-' + srpm_metadata['release']
+        import_tag = generic.safe_encoding(f'imports/{dest_branch}/{srpm_nvr}')
+        commit_msg = f'import {srpm_nvr}'
+        # unpack it to new dir, move lookaside if needed, tag and push
+        if import_tag in repo_tags:
+            shutil.rmtree(source_git_repo_path)
+            shutil.rmtree(dest_git_repo_path)
+            raise err.GitCommitError(f'Git tag already exists: {import_tag}')
+
+        self.unpack_srpm(packed_srpm, dest_git_repo_path)
+        sources = self.get_dict_of_lookaside_files(dest_git_repo_path)
+        self.generate_metadata(dest_git_repo_path, self.rpm_name, sources)
+        self.generate_filesum(dest_git_repo_path, self.rpm_name, "Direct Git Import")
+
+        if skip_lookaside:
+            self.skip_import_lookaside(dest_git_repo_path, sources)
+        else:
+            self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
+                                  sources, self.dest_lookaside)
+
+        gitutil.add_all(dest_repo)
+        verify = dest_repo.is_dirty()
+        if verify:
+            gitutil.commit(dest_repo, commit_msg)
+            ref = gitutil.tag(dest_repo, import_tag, commit_msg)
+            gitutil.push(dest_repo, ref=ref)
+            shutil.rmtree(source_git_repo_path)
+            shutil.rmtree(dest_git_repo_path)
+            return True
+        print('Nothing to push')
+        shutil.rmtree(source_git_repo_path)
+        shutil.rmtree(dest_git_repo_path)
+        return False
+
+    def __get_actual_lookaside_url(self, filename, hashtype, checksum):
+        """
+        Returns the translated URL to obtain sources
+        """
+        dict_template = {
+                'PKG_NAME': self.rpm_name,
+                'FILENAME': filename,
+                'HASH_TYPE': hashtype.lower(),
+                'HASH': checksum
+        }
+
+        template = string.Template(self.upstream_lookaside_url)
+        substitute = template.substitute(dict_template)
+        return substitute
+
     @staticmethod
-    def __get_lookaside_template_path(source):
+    def __get_module_stream_branch_name(source_branch, dest_branch):
         """
-        Attempts to return the lookaside template
+        Returns a branch name for modules
         """
-        # This is an extremely hacky way to return the right value. In python
-        # 3.10, match-case was introduced. However, we need to assume that
-        # python 3.9 is the lowest used version for this module, so we need to
-        # be inefficient until we no longer use EL9 as the base line.
-        return {
-                'rocky8': const.GitConstants.ROCKY8_LOOKASIDE_PATH,
-                'rocky': const.GitConstants.ROCKY_LOOKASIDE_PATH,
-                'centos': const.GitConstants.CENTOS_LOOKASIDE_PATH,
-                'stream': const.GitConstants.STREAM_LOOKASIDE_PATH,
-                'fedora': const.GitConstants.FEDORA_LOOKASIDE_PATH,
-                }.get(source, None)
+        regex = r'stream-([a-zA-Z0-9_\.]+)-([a-zA-Z0-9_\.]+)'
+        regex_search = re.search(regex, source_branch)
+        return f'{dest_branch}-stream-{regex_search.group(2)}'
 
     @property
     def rpm_name(self):
@@ -449,6 +679,14 @@ class GitImport(Import):
         Returns the name of the RPM we're working with
         """
         return self.__rpm
+
+    @property
+    def rpm_name_replace(self):
+        """
+        Returns the name of the RPM we're working with
+        """
+        new_name = self.__rpm.replace('+', 'plus')
+        return new_name
 
     @property
     def source_branch(self):
@@ -484,6 +722,20 @@ class GitImport(Import):
         Returns the dist tag
         """
         return self.__dist_tag
+
+    @property
+    def upstream_lookaside(self):
+        """
+        Returns upstream lookaside
+        """
+        return self.__upstream_lookaside
+
+    @property
+    def upstream_lookaside_url(self):
+        """
+        Returns upstream lookaside
+        """
+        return self.__upstream_lookaside_url
 
     @property
     def dest_lookaside(self):

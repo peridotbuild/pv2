@@ -1,10 +1,14 @@
 """
 Generic functions
 """
+import os
+import sys
 import datetime
 import hashlib
+import pycurl
 from urllib.parse import quote as urlquote
 from pv2.util import error as err
+from pv2.util import fileutil
 
 # General utilities
 __all__ = [
@@ -14,7 +18,9 @@ __all__ = [
         'generate_password_hash',
         'ordered',
         'to_unicode',
-        'trim_non_empty_string'
+        'trim_non_empty_string',
+        'hash_checker',
+        'download_file'
 ]
 
 def to_unicode(string: str) -> str:
@@ -86,3 +92,82 @@ def safe_encoding(data: str) -> str:
     # the urllib library currently doesn't reserve this
     quoter = quoter.replace('~', '%7e')
     return quoter
+
+def hash_checker(data: str) -> str:
+    """
+    Returns the type of hash the string possibly is
+    """
+    if len(data) == 128:
+        hashtype = 'sha512'
+    elif len(data) == 64:
+        hashtype = 'sha256'
+    elif len(data) == 40:
+        hashtype = 'sha1'
+    elif len(data) == 32:
+        hashtype = 'md5'
+    else:
+        raise err.GenericError('Data is either invalid or is not a hash.')
+
+    return hashtype
+
+def download_file(url: str, to_path: str, checksum=None, hashtype=None):
+    """
+    Downloads a file
+    """
+    url = url.encode('utf-8')
+    if os.path.exists(to_path):
+        if not checksum or not hashtype:
+            # pylint: disable=line-too-long
+            raise err.DownloadError(f'File {to_path} already exists, but a checksum was not provided to verify it.')
+
+        file_checksum = fileutil.get_checksum(to_path, hashtype=hashtype)
+        if file_checksum == checksum:
+            print('File already downloaded and checksum is valid.')
+        else:
+            raise err.DownloadError('File exists, but checksum does not match')
+
+    # Assume path doesn't exist, download it.
+    print(f'Downloading {to_path}')
+    with open(to_path, 'wb') as dlf:
+        # todo: add stdout or logging for this
+        # pylint: disable=c-extension-no-member
+        curl = pycurl.Curl()
+        curl.setopt(pycurl.URL, url)
+        curl.setopt(pycurl.HTTPHEADER, ['Pragma:'])
+        curl.setopt(pycurl.NOPROGRESS, True)
+        curl.setopt(pycurl.OPT_FILETIME, True)
+        curl.setopt(pycurl.WRITEDATA, dlf)
+        curl.setopt(pycurl.LOW_SPEED_LIMIT, 1000)
+        curl.setopt(pycurl.LOW_SPEED_TIME, 300)
+        curl.setopt(pycurl.FOLLOWLOCATION, 1)
+
+        try:
+            curl.perform()
+            timestamp = curl.getinfo(pycurl.INFO_FILETIME)
+            status = curl.getinfo(pycurl.RESPONSE_CODE)
+        except Exception as exc:
+            os.remove(to_path)
+            raise err.DownloadError(exc)
+        finally:
+            curl.close()
+
+        if sys.stdout.isatty():
+            sys.stdout.write('\n')
+            sys.stdout.flush()
+
+        if status != 200:
+            print(f'Removing invalid file {to_path}')
+            os.remove(to_path)
+            raise err.DownloadError(f'There was an error downloading: {status}')
+
+    os.utime(to_path, (timestamp, timestamp))
+    # verify checksum
+    if not checksum or not hashtype:
+        # pylint: disable=line-too-long
+        print('checksum and hashtype were not set, skipping verification')
+        return
+
+    file_checksum = fileutil.get_checksum(to_path, hashtype=hashtype)
+    if file_checksum != checksum:
+        os.remove(to_path)
+        raise err.DownloadError('Checksums do not match for downloaded file')
