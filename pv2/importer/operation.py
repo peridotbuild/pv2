@@ -524,7 +524,8 @@ class GitImport(Import):
         # dest_branch to be: {dest_branch}-stream-{stream_name}
         if "stream" in source_branch:
             dest_branch = self.__get_module_stream_branch_name(source_branch, dest_branch)
-            _dist_tag = f'.module+{_dist_tag}+1010+deadbeef'
+            distmarker = self.dist_tag.lstrip('.')
+            _dist_tag = f'.module+{distmarker}+1010+deadbeef'
 
         # Do SCL logic here.
 
