@@ -58,6 +58,9 @@ class Import:
         """
         Packs an srpm from available sources
         """
+        if not os.path.exists('/usr/bin/rpmbuild'):
+            raise err.FileNotFound('rpmbuild command is missing')
+
         command_to_send = [
                 'rpmbuild',
                 '-bs',

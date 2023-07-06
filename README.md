@@ -14,6 +14,7 @@ in the RESF (such as Rocky Linux).
   * CentOS Stream 8, 9+ recommended
 
 * Python 3.6 or higher - Python 3.9+ recommended
+* rpm-build
 * A few python modules
 
   * file-magic (python3-file-magic)
@@ -22,7 +23,7 @@ in the RESF (such as Rocky Linux).
   * rpm (python3-rpm)
   * pycurl (python3-pycurl)
 
-* rpm macros packages
+* rpm macros packages (brought in by rpm-build package)
 
   * \*-rpm-macros
   * \*-srpm-macros
