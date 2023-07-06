@@ -212,6 +212,17 @@ class Import:
 
         return file_dict
 
+    @staticmethod
+    def perform_cleanup(list_of_dirs: list):
+        """
+        Clean up whatever is thrown at us
+        """
+        for directory in list_of_dirs:
+            try:
+                shutil.rmtree(directory)
+            except Exception as exc:
+                raise err.FileNotFound(f'{directory} could not be deleted. Please check. {exc}')
+
 # pylint: disable=too-many-instance-attributes
 class SrpmImport(Import):
     """
@@ -334,7 +345,7 @@ class SrpmImport(Import):
         # Raise an error if the tag already exists. Force the importer to tag
         # manually.
         if import_tag in repo_tags:
-            shutil.rmtree(git_repo_path)
+            self.perform_cleanup([git_repo_path])
             raise err.GitCommitError(f'Git tag already exists: {import_tag}')
 
         self.unpack_srpm(self.srpm_path, git_repo_path)
@@ -355,13 +366,13 @@ class SrpmImport(Import):
             gitutil.commit(repo, commit_msg)
             ref = gitutil.tag(repo, import_tag, commit_msg)
             gitutil.push(repo, ref=ref)
-            shutil.rmtree(git_repo_path)
+            self.perform_cleanup([git_repo_path])
             return True
 
         # The most recent commit is assumed to be tagged also. We will not
         # push. Force the importer to tag manually.
         print('Nothing to push')
-        shutil.rmtree(git_repo_path)
+        self.perform_cleanup([git_repo_path])
         return False
 
     @property
@@ -624,8 +635,7 @@ class GitImport(Import):
         commit_msg = f'import {srpm_nvr}'
         # unpack it to new dir, move lookaside if needed, tag and push
         if import_tag in repo_tags:
-            shutil.rmtree(source_git_repo_path)
-            shutil.rmtree(dest_git_repo_path)
+            self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
             raise err.GitCommitError(f'Git tag already exists: {import_tag}')
 
         self.unpack_srpm(packed_srpm, dest_git_repo_path)
@@ -645,12 +655,10 @@ class GitImport(Import):
             gitutil.commit(dest_repo, commit_msg)
             ref = gitutil.tag(dest_repo, import_tag, commit_msg)
             gitutil.push(dest_repo, ref=ref)
-            shutil.rmtree(source_git_repo_path)
-            shutil.rmtree(dest_git_repo_path)
+            self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
             return True
         print('Nothing to push')
-        shutil.rmtree(source_git_repo_path)
-        shutil.rmtree(dest_git_repo_path)
+        self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
         return False
 
     def __get_actual_lookaside_url(self, filename, hashtype, checksum):
