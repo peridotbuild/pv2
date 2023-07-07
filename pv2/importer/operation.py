@@ -260,7 +260,7 @@ class Import:
         if len(regex_search.group(3)) == 1:
             micro_version = f'0{regex_search.group(3)}'
 
-        return f'{release}{minor_version}{micro_version}'
+        return f'{release}{minor_version}{micro_version}{timestamp}'
 
 # pylint: disable=too-many-instance-attributes
 class SrpmImport(Import):
