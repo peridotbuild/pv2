@@ -7,4 +7,4 @@ This assists packagers by taking input as srpm or git location, importing and
 tagging it as appropriate.
 """
 
-from .operation import Import, SrpmImport, GitImport
+from .operation import Import, SrpmImport, GitImport, ModuleImport

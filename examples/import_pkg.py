@@ -6,7 +6,7 @@ Import a source RPM into a git forge using pv2
 import argparse
 import pv2.importer as importutil
 
-parser = argparse.ArgumentParser(description="ISO Compose")
+parser = argparse.ArgumentParser(description="Importer")
 
 parser.add_argument('--giturl', type=str, required=True)
 parser.add_argument('--branch', type=str, required=True)
