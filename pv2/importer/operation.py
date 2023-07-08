@@ -238,12 +238,13 @@ class Import:
         """
         Returns a branch name for modules
         """
-        regex = r'stream-([a-zA-Z0-9_\.]+)-([a-zA-Z0-9_\.]+)'
-        regex_search = re.search(regex, source_branch)
+        branch_fix = re.sub(r'-rhel-\d+\.\d+\.\d+', '', source_branch)
+        regex = r'stream-([a-zA-Z0-9_\.-]+)-([a-zA-Z0-9_\.]+)'
+        regex_search = re.search(regex, branch_fix)
         return regex_search.group(2)
 
     @staticmethod
-    def get_module_stream_version(release, source_branch, timestamp):
+    def get_module_stream_os(release, source_branch, timestamp):
         """
         Returns a code of major, minor, micro version if applicable
         """
@@ -855,9 +856,7 @@ class ModuleImport(Import):
             raise err.GitInitError('Upstream git repo does not exist')
 
         dest_branch = f'{dest_branch}-stream-{stream_name}'
-        module_version = self.get_module_stream_version(self.release,
-                                                        source_branch,
-                                                        self.datestamp)
+        module_version = self.get_module_stream_os(self.release, source_branch, self.datestamp)
         nsvc = f'{self.module_name}-{stream_name}-{module_version}.deadbeef'
         import_tag = generic.safe_encoding(
                 f'imports/{dest_branch}/{nsvc}'
