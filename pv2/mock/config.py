@@ -560,30 +560,22 @@ class MockConfig(MockConfigUtils):
 
         # We can easily use "switch" here but we are accounting for python 3.9
         # at this time, which does not have it.
-        if target_arch == "x86_64":
-            return const.MockConstants.MOCK_X86_64_LEGAL_ARCHES
+        returner = {
+                'x86_64': const.MockConstants.MOCK_X86_64_LEGAL_ARCHES,
+                'i386': const.MockConstants.MOCK_I686_LEGAL_ARCHES,
+                'i486': const.MockConstants.MOCK_I686_LEGAL_ARCHES,
+                'i586': const.MockConstants.MOCK_I686_LEGAL_ARCHES,
+                'i686': const.MockConstants.MOCK_I686_LEGAL_ARCHES,
+                'aarch64': const.MockConstants.MOCK_AARCH64_LEGAL_ARCHES,
+                'armv7hl': const.MockConstants.MOCK_ARMV7HL_LEGAL_ARCHES,
+                'ppc64le': const.MockConstants.MOCK_PPC64LE_LEGAL_ARCHES,
+                's390x': const.MockConstants.MOCK_S390X_LEGAL_ARCHES,
+                'riscv64': const.MockConstants.MOCK_RISCV64_LEGAL_ARCHES,
+                'noarch': const.MockConstants.MOCK_NOARCH_LEGAL_ARCHES
+        }.get(target_arch, None)
 
-        if target_arch in ['i386', 'i486', 'i586', 'i686']:
-            return const.MockConstants.MOCK_I686_LEGAL_ARCHES
-
-        if target_arch in "aarch64":
-            return const.MockConstants.MOCK_AARCH64_LEGAL_ARCHES
-
-        if target_arch in "armv7hl":
-            return const.MockConstants.MOCK_ARMV7HL_LEGAL_ARCHES
-
-        if target_arch in "ppc64le":
-            return const.MockConstants.MOCK_PPC64LE_LEGAL_ARCHES
-
-        if target_arch in "s390x":
-            return const.MockConstants.MOCK_S390X_LEGAL_ARCHES
-
-        if target_arch in "riscv64":
-            return const.MockConstants.MOCK_RISCV64_LEGAL_ARCHES
-
-        # This shouldn't happen, but who knows
-        if target_arch in "noarch":
-            return const.MockConstants.MOCK_NOARCH_LEGAL_ARCHES
+        if returner:
+            return returner
 
         return err.ProvidedValueError(f'Legal arches not found for {target_arch}.')
 
