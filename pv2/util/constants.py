@@ -36,7 +36,6 @@ class RpmConstants:
         11: 'SHA224'
     }
 
-MOCK_CLONE_DIRECTORY = '/var/peridot/peridot__rpmbuild_content'
 
 # pylint: disable=too-few-public-methods
 class ErrorConstants:
@@ -138,6 +137,7 @@ class MockConstants:
             "system-release"
     ]
     MOCK_DEFAULT_CHROOT_SETUP_CMD = 'install'
+    MOCK_CLONE_DIRECTORY = '/var/peridot/peridot__rpmbuild_content'
 
     # Mock architecture related
     MOCK_X86_64_LEGAL_ARCHES = ('x86_64',)
