@@ -24,6 +24,13 @@ __all__ = [
         'MockDnfError',
         'MockResultdirError',
         'MockSignalReceivedError',
+        'GitCommitError',
+        'GitPushError',
+        'GitInitError',
+        'GitCheckoutError',
+        'RpmOpenError',
+        'RpmSigError',
+        'RpmInfoError',
 ]
 
 
