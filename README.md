@@ -1,5 +1,11 @@
 # pv2
 
+![pv2 last commit](https://img.shields.io/github/last-commit/peridotbuild/pv2/development) ![pv2 issues](https://img.shields.io/github/issues/peridotbuild/pv2?link=https%3A%2F%2Fgithub.com%2Fperidotbuild%2Fpv2%2Fissues) ![prs](https://img.shields.io/github/issues-pr/peridotbuild/pv2?link=https%3A%2F%2Fgithub.com%2Fperidotbuild%2Fpv2%2Fpulls)
+
+![language](https://img.shields.io/badge/language-python-blue)
+
+![license](https://img.shields.io/github/license/peridotbuild/pv2)
+
 pv2 is a backend module framework for building and development. Initially
 designed as a POC to support peridot's transition to python, it provides
 utilities that can be used for developers in and outside of the projects
