@@ -15,7 +15,7 @@ parser.add_argument('--dest-branch', type=str, required=False, default='')
 parser.add_argument('--release', type=str, required=False, default='')
 parser.add_argument('--distprefix', type=str, required=False, default='el')
 parser.add_argument('--upstream-lookaside', type=str, required=True)
-parser.add_argument('--alternate-spec-name', type=str, required=False, default='', description='e.g. if kernel-rt, use kernel')
+parser.add_argument('--alternate-spec-name', type=str, required=False, default='', help='e.g. if kernel-rt, use kernel')
 results = parser.parse_args()
 classy = importutil.GitImport(
         results.srpm,

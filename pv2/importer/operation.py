@@ -49,6 +49,25 @@ class Import:
                 shutil.rmtree(file)
 
     @staticmethod
+    def find_spec_file(local_repo_path):
+        """
+        Identifies the spec file in the repo. In the event there's two spec
+        files, we will error out. Only one spec file is allowed per
+        repo/package.
+        """
+        file_list = fileutil.filter_files(
+                local_repo_path,
+                lambda file: file.endswith('.spec'))
+
+        if len(file_list) > 1:
+            raise err.ConfigurationError('This repo has more than one spec file.')
+
+        if len(file_list) == 0:
+            raise err.ConfigurationError('This repo has no spec files.')
+
+        return file_list[0]
+
+    @staticmethod
     def unpack_srpm(srpm_path, local_repo_path):
         """
         Unpacks an srpm to the local repo path
@@ -666,6 +685,9 @@ class GitImport(Import):
 
             generic.download_file(the_url, download_file, download_checksum,
                                   download_hashtype)
+
+        if not os.path.exists(source_git_repo_spec) and len(self.alternate_spec_name) == 0:
+            source_git_repo_spec = self.find_spec_file(source_git_repo_path)
 
         # attempt to pack up the RPM, get metadata
         packed_srpm = self.pack_srpm(source_git_repo_path, source_git_repo_spec, _dist_tag)
