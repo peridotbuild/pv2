@@ -514,6 +514,7 @@ class GitImport(Import):
             upstream_lookaside: str,
             scl_mode: bool = False,
             scl_package: str = '',
+            alternate_spec_name: str = '',
             dest_lookaside: str = '/var/www/html/sources',
             source_git_protocol: str = 'https',
             dest_branch: str = '',
@@ -539,6 +540,7 @@ class GitImport(Import):
         self.__dest_lookaside = dest_lookaside
         self.__upstream_lookaside = upstream_lookaside
         self.__upstream_lookaside_url = self.get_lookaside_template_path(upstream_lookaside)
+        self.__alternate_spec_name = alternate_spec_name
 
         if len(dest_branch) > 0:
             self.__dest_branch = dest_branch
@@ -569,6 +571,9 @@ class GitImport(Import):
         # If the upstream repo doesn't report anything, exit.
         if not check_source_repo:
             raise err.GitInitError('Upstream git repo does not exist')
+
+        if len(self.alternate_spec_name) > 0:
+            source_git_repo_spec = f'{source_git_repo_path}/{self.alternate_spec_name}.spec'
 
         # If the source branch has "stream" in the name, it should be assumed
         # it'll be a module. Since this should always be the case, we'll change
@@ -731,6 +736,13 @@ class GitImport(Import):
         """
         new_name = self.__rpm.replace('+', 'plus')
         return new_name
+
+    @property
+    def alternate_spec_name(self):
+        """
+        Returns the actual name of the spec file if it's not the package name.
+        """
+        return self.__alternate_spec_name
 
     @property
     def source_branch(self):
