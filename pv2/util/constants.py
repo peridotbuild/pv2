@@ -96,6 +96,7 @@ class ErrorConstants:
     RPM_ERR_OPEN = 9400
     RPM_ERR_SIG = 9401
     RPM_ERR_INFO = 9402
+    RPM_ERR_BUILD = 9403
 
 # pylint: disable=too-few-public-methods
 class MockConstants:

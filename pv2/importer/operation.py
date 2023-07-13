@@ -80,7 +80,10 @@ class Import:
                 f"'%_topdir {local_repo_path}'"
         ]
         command_to_send = ' '.join(command_to_send)
-        processor.run_proc_no_output_shell(command_to_send)
+        returned = processor.run_proc_no_output_shell(command_to_send)
+        if returned != 0:
+            rpmerr = returned.stderr
+            raise err.RpmOpenError(f'This package could not be unpacked:\n\n{rpmerr}')
 
     @staticmethod
     def pack_srpm(srpm_dir, spec_file, dist_tag):
@@ -103,6 +106,9 @@ class Import:
         ]
         command_to_send = ' '.join(command_to_send)
         returned = processor.run_proc_no_output_shell(command_to_send)
+        if returned != 0:
+            rpmerr = returned.stderr
+            raise err.RpmBuildError(f'There was error packing the rpm:\n\n{rpmerr}')
         wrote_regex = r'Wrote:\s+(.*\.rpm)'
         regex_search = re.search(wrote_regex, returned.stdout, re.MULTILINE)
         if regex_search:

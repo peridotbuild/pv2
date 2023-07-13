@@ -31,6 +31,7 @@ __all__ = [
         'RpmOpenError',
         'RpmSigError',
         'RpmInfoError',
+        'RpmBuildError',
 ]
 
 
@@ -170,7 +171,12 @@ class RpmSigError(GenericError):
 
 class RpmInfoError(GenericError):
     """
-    There was an issue opening the RPM because the signature could not be
-    verified
+    There was an issue opening the RPM because the RPM is not valid.
     """
     fault_code = errconst.RPM_ERR_INFO
+
+class RpmBuildError(GenericError):
+    """
+    There was an issue building or packing the RPM.
+    """
+    fault_code = errconst.RPM_ERR_BUILD
