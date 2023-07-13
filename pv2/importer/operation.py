@@ -321,6 +321,12 @@ class SrpmImport(Import):
         git_url = f'ssh://{git_user}@{git_url_path}/{org}/{pkg_name}.git'
         self.__git_url = git_url
 
+        file_name_search_srpm_res = re.search(r'.*?\.src\.rpm$',
+                                              self.__srpm_path, re.IGNORECASE)
+
+        if not file_name_search_srpm_res:
+            raise err.RpmInfoError('This is not a source package')
+
         if len(release) == 0:
             self.__release = self.__get_srpm_release_version
 
