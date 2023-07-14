@@ -81,7 +81,7 @@ class Import:
         ]
         command_to_send = ' '.join(command_to_send)
         returned = processor.run_proc_no_output_shell(command_to_send)
-        if returned != 0:
+        if returned.returncode != 0:
             rpmerr = returned.stderr
             raise err.RpmOpenError(f'This package could not be unpacked:\n\n{rpmerr}')
 
@@ -106,7 +106,7 @@ class Import:
         ]
         command_to_send = ' '.join(command_to_send)
         returned = processor.run_proc_no_output_shell(command_to_send)
-        if returned != 0:
+        if returned.returncode != 0:
             rpmerr = returned.stderr
             raise err.RpmBuildError(f'There was error packing the rpm:\n\n{rpmerr}')
         wrote_regex = r'Wrote:\s+(.*\.rpm)'
