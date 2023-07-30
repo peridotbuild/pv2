@@ -579,7 +579,7 @@ class GitImport(Import):
         if not self.__upstream_lookaside:
             raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-statements, too-many-branches
     def pkg_import(self, skip_lookaside: bool = False):
         """
         Actually perform the import
@@ -728,6 +728,14 @@ class GitImport(Import):
         else:
             self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
                                   sources, self.dest_lookaside)
+
+        # This is a temporary hack. There are cases that the .gitignore that's
+        # provided by upstream errorneouly keeps out certain sources, despite
+        # the fact that they were pushed before. We're killing off any
+        # .gitignore we find in the root.
+        dest_gitignore_file = f'{dest_git_repo_path}/.gitignore'
+        if os.path.exists(dest_gitignore_file):
+            os.remove(dest_gitignore_file)
 
         gitutil.add_all(dest_repo)
         verify = dest_repo.is_dirty()
