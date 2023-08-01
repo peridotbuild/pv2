@@ -147,6 +147,8 @@ class Import:
             for file in os.scandir(f'{local_repo_path}/SOURCES'):
                 full_path = f'{local_repo_path}/SOURCES/{file.name}'
                 magic = fileutil.get_magic_file(full_path)
+                if magic.name == 'empty':
+                    continue
                 if magic.encoding == 'binary':
                     source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
 
