@@ -432,6 +432,11 @@ class SrpmImport(Import):
             self.import_lookaside(git_repo_path, self.rpm_name, branch,
                                   sources, self.dest_lookaside)
 
+        # Temporary hack like with git.
+        dest_gitignore_file = f'{git_repo_path}/.gitignore'
+        if os.path.exists(dest_gitignore_file):
+            os.remove(dest_gitignore_file)
+
         gitutil.add_all(repo)
 
         verify = repo.is_dirty()
