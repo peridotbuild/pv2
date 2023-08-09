@@ -149,7 +149,6 @@ def lsremote(url):
     # pylint: disable=no-member
     except gitexc.CommandError as exc:
         print(f'Repo does not exist or is not accessible: {exc.stderr}')
-        print('TEST:', url)
         return None
 
     for ref in git_cmd.ls_remote(url).split('\n'):
