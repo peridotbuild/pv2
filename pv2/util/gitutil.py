@@ -149,9 +149,14 @@ def lsremote(url):
     # pylint: disable=no-member
     except gitexc.CommandError as exc:
         print(f'Repo does not exist or is not accessible: {exc.stderr}')
+        print('TEST:', url)
         return None
 
     for ref in git_cmd.ls_remote(url).split('\n'):
         hash_ref_list = ref.split('\t')
-        remote_refs[hash_ref_list[1]] = hash_ref_list[0]
+        # Solves "IndexError: list index out of range" error when working 
+        # with a completely empty Gitlab repository.
+        # (Initialized without README in the web interface)
+        if len(hash_ref_list) > 1:
+            remote_refs[hash_ref_list[1]] = hash_ref_list[0]
     return remote_refs
