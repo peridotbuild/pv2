@@ -86,7 +86,7 @@ class Import:
             raise err.RpmOpenError(f'This package could not be unpacked:\n\n{rpmerr}')
 
     @staticmethod
-    def pack_srpm(srpm_dir, spec_file, dist_tag):
+    def pack_srpm(srpm_dir, spec_file, dist_tag, release_ver):
         """
         Packs an srpm from available sources
         """
@@ -102,7 +102,9 @@ class Import:
                 '--define',
                 f"'_topdir {srpm_dir}'",
                 '--define',
-                f"'_sourcedir {srpm_dir}'"
+                f"'_sourcedir {srpm_dir}'",
+                '--define',
+                f"'rhel {release_ver}'"
         ]
         command_to_send = ' '.join(command_to_send)
         returned = processor.run_proc_no_output_shell(command_to_send)
@@ -359,6 +361,7 @@ class SrpmImport(Import):
 
         return None
 
+    # pylint: disable=too-many-locals
     def pkg_import(self, skip_lookaside: bool = False):
         """
         Actually perform the import
@@ -605,6 +608,7 @@ class GitImport(Import):
         source_branch = self.source_branch
         dest_branch = self.dest_branch
         _dist_tag = self.dist_tag
+        release_ver = self.__release
         repo_tags = []
 
         # If the upstream repo doesn't report anything, exit.
@@ -710,7 +714,10 @@ class GitImport(Import):
             source_git_repo_spec = self.find_spec_file(source_git_repo_path)
 
         # attempt to pack up the RPM, get metadata
-        packed_srpm = self.pack_srpm(source_git_repo_path, source_git_repo_spec, _dist_tag)
+        packed_srpm = self.pack_srpm(source_git_repo_path,
+                                     source_git_repo_spec,
+                                     _dist_tag,
+                                     release_ver)
         if not packed_srpm:
             raise err.MissingValueError(
                     'The srpm was not written, yet command completed successfully.'
