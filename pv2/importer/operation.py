@@ -187,6 +187,7 @@ class Import:
                 print(f'{dest_path} already exists, skipping')
                 os.remove(source_path)
             else:
+                print(f'Moving {source_path} to {dest_path}')
                 shutil.move(src=source_path, dst=dest_path)
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
