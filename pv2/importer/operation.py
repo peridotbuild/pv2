@@ -566,9 +566,9 @@ class GitImport(Import):
             package: str,
             source_git_url_path: str,
             source_git_org_path: str,
-            git_url_path: str,
+            dest_git_url_path: str,
             release: str,
-            branch: str,
+            source_branch: str,
             upstream_lookaside: str,
             scl_mode: bool = False,
             scl_package: str = '',
@@ -578,8 +578,8 @@ class GitImport(Import):
             dest_branch: str = '',
             distprefix: str = 'el',
             source_git_user: str = 'git',
-            git_user: str = 'git',
-            org: str = 'rpms'
+            dest_git_user: str = 'git',
+            dest_org: str = 'rpms'
     ):
         """
         Init the class.
@@ -595,11 +595,11 @@ class GitImport(Import):
             full_source_git_url_path = f'{source_git_user}@{source_git_url_path}'
 
         self.__source_git_url = f'{source_git_protocol}://{full_source_git_url_path}/{source_git_org_path}/{package}.git'
-        self.__git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package}.git'
+        self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_url_path}/{dest_org}/{package}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
-        self.__branch = branch
-        self.__dest_branch = branch
+        self.__source_branch = source_branch
+        self.__dest_branch = source_branch
         self.__dest_lookaside = dest_lookaside
         self.__upstream_lookaside = upstream_lookaside
         self.__upstream_lookaside_url = self.get_lookaside_template_path(upstream_lookaside)
@@ -827,7 +827,7 @@ class GitImport(Import):
         """
         Returns the starting branch
         """
-        return self.__branch
+        return self.__source_branch
 
     @property
     def dest_branch(self):
@@ -848,7 +848,7 @@ class GitImport(Import):
         """
         Returns the destination git url
         """
-        return self.__git_url
+        return self.__dest_git_url
 
     @property
     def dist_tag(self):

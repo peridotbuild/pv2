@@ -29,10 +29,10 @@ git_parser.add_argument('--name', type=str, required=True)
 git_parser.add_argument('--source-gituser', type=str, required=False, default='git')
 git_parser.add_argument('--source-giturl', type=str, required=True)
 git_parser.add_argument('--source-gitorg', type=str, required=True)
-git_parser.add_argument('--gituser', type=str, required=False, default='git')
-git_parser.add_argument('--branch', type=str, required=True)
-git_parser.add_argument('--giturl', type=str, required=True)
-git_parser.add_argument('--gitorg', type=str, required=False, default='rpms')
+git_parser.add_argument('--source-branch', type=str, required=True)
+git_parser.add_argument('--dest-gituser', type=str, required=False, default='git')
+git_parser.add_argument('--dest-giturl', type=str, required=True)
+git_parser.add_argument('--dest-gitorg', type=str, required=False, default='rpms')
 git_parser.add_argument('--dest-branch', type=str, required=False, default='')
 git_parser.add_argument('--release', type=str, required=False, default='')
 git_parser.add_argument('--distprefix', type=str, required=False, default='el')
@@ -52,6 +52,9 @@ results = parser.parse_args()
 command = parser.parse_args().cmd
 
 def main():
+    """
+    Run the main program. Callable via poetry or __main__
+    """
     if command == 'rpm':
         classy = importutil.SrpmImport(
                 git_url_path=results.giturl,
@@ -71,11 +74,11 @@ def main():
                 source_git_user=results.source_gituser,
                 source_git_url_path=results.source_giturl,
                 source_git_org_path=results.source_gitorg,
-                git_user=results.gituser,
-                git_url_path=results.giturl,
-                org=results.gitorg,
+                dest_git_user=results.dest_gituser,
+                dest_git_url_path=results.dest_giturl,
+                dest_org=results.dest_gitorg,
                 release=results.release,
-                branch=results.branch,
+                source_branch=results.source_branch,
                 dest_branch=results.dest_branch,
                 upstream_lookaside=results.upstream_lookaside,
                 distprefix=results.distprefix,
