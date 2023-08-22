@@ -195,6 +195,22 @@ class Import:
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
 
     @staticmethod
+    def import_lookaside_peridot_cli(
+            repo_path: str,
+            repo_name: str,
+            file_dict: dict,
+    ):
+        """
+        Attempts to find and use the peridot-cli binary to upload to peridot's
+        lookaside. This assumes the environment is setup correctly with the
+        necessary variables.
+
+        Note: This is a temporary hack and will be removed in a future update.
+        """
+        for name, _ in file_dict.items():
+            source_path = f'{repo_path}/{name}'
+
+    @staticmethod
     def skip_import_lookaside(repo_path: str, file_dict: dict):
         """
         Removes all files that are supposed to go to the lookaside. This is for
@@ -561,6 +577,7 @@ class GitImport(Import):
             source_git_protocol: str = 'https',
             dest_branch: str = '',
             distprefix: str = 'el',
+            source_git_user: str = 'git',
             git_user: str = 'git',
             org: str = 'rpms'
     ):
@@ -573,7 +590,11 @@ class GitImport(Import):
         self.__rpm = package
         self.__release = release
         # pylint: disable=line-too-long
-        self.__source_git_url = f'{source_git_protocol}://{source_git_url_path}/{source_git_org_path}/{package}.git'
+        full_source_git_url_path = source_git_url_path
+        if source_git_protocol == 'ssh':
+            full_source_git_url_path = f'{source_git_user}@{source_git_url_path}'
+
+        self.__source_git_url = f'{source_git_protocol}://{full_source_git_url_path}/{source_git_org_path}/{package}.git'
         self.__git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'

@@ -1,6 +1,6 @@
 [project]
 name = "pv2"
-version = "0.10.1"
+version = "0.11.0"
 description = "PV2 backend framework module"
 readme = "README.md"
 authors = [
@@ -29,3 +29,8 @@ file = "LICENSE"
 
 [tool.setuptools]
 package-dir = { "pv2" = "pv2" }
+
+[tool.poetry.scripts]
+import_pkg = "pv2.scripts.import_pkg:run"
+#pkg_info = "pv2.scripts.pkg_info:run"
+#build_pkg = "pv2.scripts.build_pkg:run"
