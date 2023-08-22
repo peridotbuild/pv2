@@ -36,7 +36,7 @@ git_parser.add_argument('--gitorg', type=str, required=False, default='rpms')
 git_parser.add_argument('--dest-branch', type=str, required=False, default='')
 git_parser.add_argument('--release', type=str, required=False, default='')
 git_parser.add_argument('--distprefix', type=str, required=False, default='el')
-rpm_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
+git_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
 git_parser.add_argument('--upstream-lookaside',
                         choices=('rocky8', 'rocky', 'centos', 'stream', 'fedora'),
                         required=True)
