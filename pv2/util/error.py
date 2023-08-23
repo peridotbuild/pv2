@@ -32,6 +32,7 @@ __all__ = [
         'RpmSigError',
         'RpmInfoError',
         'RpmBuildError',
+        'UploadError',
 ]
 
 
@@ -180,3 +181,10 @@ class RpmBuildError(GenericError):
     There was an issue building or packing the RPM.
     """
     fault_code = errconst.RPM_ERR_BUILD
+
+class UploadError(GenericError):
+    """
+    There was an issue for uploading an artifact or the uploader is not
+    working.
+    """
+    fault_code = errconst.UPLOAD_ERR

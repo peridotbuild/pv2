@@ -98,6 +98,9 @@ class ErrorConstants:
     RPM_ERR_INFO = 9402
     RPM_ERR_BUILD = 9403
 
+    # Upload errors
+    UPLOAD_ERR = 9500
+
 # pylint: disable=too-few-public-methods
 class MockConstants:
     """
