@@ -54,7 +54,7 @@ def upload_to_s3(
         dest_name = os.path.basename(input_file)
 
     if s3 is None:
-        err.UploadError('s3 module is not available')
+        raise err.UploadError('s3 module is not available')
 
     s3_client = boto3.client(
             's3',

@@ -24,6 +24,10 @@ rpm_parser.add_argument('--verify-signature', action='store_true')
 rpm_parser.add_argument('--skip-lookaside-upload',
                         action='store_true',
                         help='Set this flag to skip uploading to /var/www/html/sources esque lookaside')
+rpm_parser.add_argument('--upload-to-s3', action='store_true')
+rpm_parser.add_argument('--aws-access-key-id', type=str, required=False, default='')
+rpm_parser.add_argument('--aws-access-key', type=str, required=False, default='')
+rpm_parser.add_argument('--aws-bucket', type=str, required=False, default='')
 
 git_parser.add_argument('--name', type=str, required=True)
 git_parser.add_argument('--source-gituser', type=str, required=False, default='git')
@@ -47,6 +51,10 @@ git_parser.add_argument('--alternate-spec-name',
 git_parser.add_argument('--skip-lookaside-upload',
                         action='store_true',
                         help='Set this flag to skip uploading to /var/www/html/sources esque lookaside')
+git_parser.add_argument('--upload-to-s3', action='store_true')
+git_parser.add_argument('--aws-access-key-id', type=str, required=False, default='')
+git_parser.add_argument('--aws-access-key', type=str, required=False, default='')
+git_parser.add_argument('--aws-bucket', type=str, required=False, default='')
 
 results = parser.parse_args()
 command = parser.parse_args().cmd
@@ -66,8 +74,12 @@ def main():
                 org=results.gitorg,
                 dest_lookaside=results.dest_lookaside,
                 verify_signature=results.verify_signature,
+                aws_access_key_id=results.aws_access_key_id,
+                aws_access_key=results.aws_access_key,
+                aws_bucket=results.aws_bucket,
         )
-        classy.pkg_import(skip_lookaside=results.skip_lookaside_upload)
+        classy.pkg_import(skip_lookaside=results.skip_lookaside_upload,
+                          s3_upload=results.upload_to_s3)
     elif command == 'git':
         classy = importutil.GitImport(
                 package=results.name,
@@ -84,8 +96,12 @@ def main():
                 distprefix=results.distprefix,
                 alternate_spec_name=results.alternate_spec_name,
                 dest_lookaside=results.dest_lookaside,
+                aws_access_key_id=results.aws_access_key_id,
+                aws_access_key=results.aws_access_key,
+                aws_bucket=results.aws_bucket,
         )
-        classy.pkg_import(skip_lookaside=results.skip_lookaside_upload)
+        classy.pkg_import(skip_lookaside=results.skip_lookaside_upload,
+                          s3_upload=results.upload_to_s3)
     else:
         print('Unknown command')
 

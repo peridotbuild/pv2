@@ -12,6 +12,7 @@ import datetime
 from pv2.util import gitutil, fileutil, rpmutil, processor, generic
 from pv2.util import error as err
 from pv2.util import constants as const
+from pv2.util import uploader as upload
 
 #try:
 #    import gi
@@ -193,6 +194,16 @@ class Import:
                 shutil.move(src=source_path, dst=dest_path)
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
+    @staticmethod
+    def upload_to_s3(repo_path, file_dict: dict, bucket, aws_key_id: str, aws_secret_key: str):
+        """
+        Upload an object to s3
+        """
+        for name, sha in file_dict.items():
+            source_path = f'{repo_path}/{name}'
+            dest_name = sha
+            upload.upload_to_s3(source_path, bucket, aws_key_id,
+                                aws_secret_key, dest_name=dest_name)
 
     @staticmethod
     def import_lookaside_peridot_cli(
@@ -328,7 +339,10 @@ class SrpmImport(Import):
             git_user: str = 'git',
             org: str = 'rpms',
             dest_lookaside: str = '/var/www/html/sources',
-            verify_signature: bool = False
+            verify_signature: bool = False,
+            aws_access_key_id: str = '',
+            aws_access_key: str = '',
+            aws_bucket: str = ''
     ):
         """
         Init the class.
@@ -365,6 +379,10 @@ class SrpmImport(Import):
             self.__branch = f'c{release}'
             print(f'Warning: Branch name not specified, defaulting to {self.__branch}')
 
+        self.__aws_access_key_id = aws_access_key_id
+        self.__aws_access_key = aws_access_key
+        self.__aws_bucket = aws_bucket
+
     def __get_srpm_release_version(self):
         """
         Gets the release version from the srpm
@@ -378,7 +396,7 @@ class SrpmImport(Import):
         return None
 
     # pylint: disable=too-many-locals
-    def pkg_import(self, skip_lookaside: bool = False):
+    def pkg_import(self, skip_lookaside: bool = False, s3_upload: bool = False):
         """
         Actually perform the import
 
@@ -451,6 +469,19 @@ class SrpmImport(Import):
         else:
             self.import_lookaside(git_repo_path, self.rpm_name, branch,
                                   sources, self.dest_lookaside)
+
+        if s3_upload:
+            # I don't want to blatantly blow up here yet.
+            if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
+                print('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
+            else:
+                self.upload_to_s3(
+                        git_repo_path,
+                        sources,
+                        self.__aws_bucket,
+                        self.__aws_access_key_id,
+                        self.__aws_access_key,
+                )
 
         # Temporary hack like with git.
         dest_gitignore_file = f'{git_repo_path}/.gitignore'
@@ -579,7 +610,10 @@ class GitImport(Import):
             distprefix: str = 'el',
             source_git_user: str = 'git',
             dest_git_user: str = 'git',
-            dest_org: str = 'rpms'
+            dest_org: str = 'rpms',
+            aws_access_key_id: str = '',
+            aws_access_key: str = '',
+            aws_bucket: str = ''
     ):
         """
         Init the class.
@@ -604,6 +638,9 @@ class GitImport(Import):
         self.__upstream_lookaside = upstream_lookaside
         self.__upstream_lookaside_url = self.get_lookaside_template_path(upstream_lookaside)
         self.__alternate_spec_name = alternate_spec_name
+        self.__aws_access_key_id = aws_access_key_id
+        self.__aws_access_key = aws_access_key
+        self.__aws_bucket = aws_bucket
 
         if len(dest_branch) > 0:
             self.__dest_branch = dest_branch
@@ -612,7 +649,7 @@ class GitImport(Import):
             raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
 
     # pylint: disable=too-many-locals, too-many-statements, too-many-branches
-    def pkg_import(self, skip_lookaside: bool = False):
+    def pkg_import(self, skip_lookaside: bool = False, s3_upload: bool = False):
         """
         Actually perform the import
 
@@ -764,6 +801,19 @@ class GitImport(Import):
         else:
             self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
                                   sources, self.dest_lookaside)
+
+        if s3_upload:
+            # I don't want to blatantly blow up here yet.
+            if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
+                print('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
+            else:
+                self.upload_to_s3(
+                        dest_git_repo_path,
+                        sources,
+                        self.__aws_bucket,
+                        self.__aws_access_key_id,
+                        self.__aws_access_key,
+                )
 
         # This is a temporary hack. There are cases that the .gitignore that's
         # provided by upstream errorneouly keeps out certain sources, despite
