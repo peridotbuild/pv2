@@ -464,12 +464,6 @@ class SrpmImport(Import):
         self.generate_metadata(git_repo_path, self.rpm_name, sources)
         self.generate_filesum(git_repo_path, self.rpm_name, self.srpm_hash)
 
-        if skip_lookaside:
-            self.skip_import_lookaside(git_repo_path, sources)
-        else:
-            self.import_lookaside(git_repo_path, self.rpm_name, branch,
-                                  sources, self.dest_lookaside)
-
         if s3_upload:
             # I don't want to blatantly blow up here yet.
             if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
@@ -482,6 +476,12 @@ class SrpmImport(Import):
                         self.__aws_access_key_id,
                         self.__aws_access_key,
                 )
+
+        if skip_lookaside:
+            self.skip_import_lookaside(git_repo_path, sources)
+        else:
+            self.import_lookaside(git_repo_path, self.rpm_name, branch,
+                                  sources, self.dest_lookaside)
 
         # Temporary hack like with git.
         dest_gitignore_file = f'{git_repo_path}/.gitignore'
@@ -796,12 +796,6 @@ class GitImport(Import):
         self.generate_metadata(dest_git_repo_path, self.rpm_name, sources)
         self.generate_filesum(dest_git_repo_path, self.rpm_name, "Direct Git Import")
 
-        if skip_lookaside:
-            self.skip_import_lookaside(dest_git_repo_path, sources)
-        else:
-            self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
-                                  sources, self.dest_lookaside)
-
         if s3_upload:
             # I don't want to blatantly blow up here yet.
             if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
@@ -814,6 +808,12 @@ class GitImport(Import):
                         self.__aws_access_key_id,
                         self.__aws_access_key,
                 )
+
+        if skip_lookaside:
+            self.skip_import_lookaside(dest_git_repo_path, sources)
+        else:
+            self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
+                                  sources, self.dest_lookaside)
 
         # This is a temporary hack. There are cases that the .gitignore that's
         # provided by upstream errorneouly keeps out certain sources, despite
