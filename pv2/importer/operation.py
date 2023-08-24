@@ -199,6 +199,7 @@ class Import:
         """
         Upload an object to s3
         """
+        print('Pushing sources to S3...')
         for name, sha in file_dict.items():
             source_path = f'{repo_path}/{name}'
             dest_name = sha
