@@ -195,7 +195,9 @@ class Import:
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
     @staticmethod
-    def upload_to_s3(repo_path, file_dict: dict, bucket, aws_key_id: str, aws_secret_key: str):
+    # pylint: disable=too-many-arguments
+    def upload_to_s3(repo_path, file_dict: dict, bucket, aws_key_id: str,
+                     aws_secret_key: str, overwrite: bool = False):
         """
         Upload an object to s3
         """
@@ -204,7 +206,8 @@ class Import:
             source_path = f'{repo_path}/{name}'
             dest_name = sha
             upload.upload_to_s3(source_path, bucket, aws_key_id,
-                                aws_secret_key, dest_name=dest_name)
+                                aws_secret_key, dest_name=dest_name,
+                                overwrite=overwrite)
 
     @staticmethod
     def import_lookaside_peridot_cli(
