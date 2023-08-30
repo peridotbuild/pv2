@@ -340,6 +340,8 @@ class MockConfig(MockConfigUtils):
             packager: str = 'Default Packager <packager@noone.home>',
             distsuffix=None,
             distribution=None,
+            bootstrap_image_ready=False,
+            use_bootstrap_image=False,
             **kwargs
     ):
         """
@@ -418,6 +420,8 @@ class MockConfig(MockConfigUtils):
                 'rpmbuild_networking': enable_networking,
                 'print_main_output': print_main_output,
                 'macros': default_macros,
+                'bootstrap_image_ready': bootstrap_image_ready,
+                'use_bootstrap_image': use_bootstrap_image,
         }
         self.__config_opts.update(**kwargs)
         self.__extra_config_opts = collections.defaultdict(list)
