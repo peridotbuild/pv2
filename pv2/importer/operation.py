@@ -1080,10 +1080,11 @@ class ModuleImport(Import):
             module_yaml.write(content_new)
             module_yaml.close()
 
-        # Write to the sources, should be the same content
-        with open(f'{dest_git_repo_path}/SOURCES/modulemd.src.txt', 'w') as module_yaml:
-            module_yaml.write(content_new)
-            module_yaml.close()
+        # Write to the sources. It needs to be the original content.
+        shutil.copy(modulemd_file, f'{dest_git_repo_path}/SOURCES/modulemd.src.txt')
+        #with open(f'{dest_git_repo_path}/SOURCES/modulemd.src.txt', 'w') as module_yaml:
+        #    module_yaml.write(content_new)
+        #    module_yaml.close()
 
         self.generate_metadata(dest_git_repo_path, self.module_name, {})
         gitutil.add_all(dest_repo)
