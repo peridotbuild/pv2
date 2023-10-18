@@ -20,7 +20,7 @@ rpm_parser.add_argument('--release', type=str, required=False, default='')
 rpm_parser.add_argument('--gitorg', type=str, required=False, default='rpms')
 rpm_parser.add_argument('--distprefix', type=str, required=False, default='el')
 rpm_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
-rpm_parser.add_argument('--verify-signature', action='store_true')
+rpm_parser.add_argument('--no-verify-signature', action='store_true')
 rpm_parser.add_argument('--skip-lookaside-upload',
                         action='store_true',
                         help='Set this flag to skip uploading to /var/www/html/sources esque lookaside')
@@ -73,7 +73,7 @@ def main():
                 git_user=results.gituser,
                 org=results.gitorg,
                 dest_lookaside=results.dest_lookaside,
-                verify_signature=results.verify_signature,
+                verify_signature=results.no_verify_signature,
                 aws_access_key_id=results.aws_access_key_id,
                 aws_access_key=results.aws_access_key,
                 aws_bucket=results.aws_bucket,
