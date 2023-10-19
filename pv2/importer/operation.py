@@ -152,6 +152,11 @@ class Import:
                 magic = fileutil.get_magic_file(full_path)
                 if magic.name == 'empty':
                     continue
+                # PGP public keys have been in the lookaside before. We'll
+                # just do it this way. It gets around weird gitignores and
+                # weird srpmproc behavior.
+                if 'PGP public' in magic.name:
+                    source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
                 if magic.encoding == 'binary':
                     source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
 
