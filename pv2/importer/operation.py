@@ -445,7 +445,7 @@ class SrpmImport(Import):
                         repo_name=self.rpm_name_replace,
                         branch=None
                 )
-                gitutil.checkout(repo, branch=self.__branch, orphan=True)
+                gitutil.checkout(repo, branch=branch, orphan=True)
             # Remove everything, plain and simple. Only needed for clone.
             self.remove_everything(repo.working_dir)
             for tag_name in repo.tags:
