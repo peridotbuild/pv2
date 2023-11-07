@@ -160,6 +160,11 @@ class Import:
                 if magic.encoding == 'binary':
                     source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
 
+                # This is a list of possible file names that should be in
+                # lookaside, even if their type ISN'T that.
+                if full_path.endswith('.rpm'):
+                    source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
+
         return source_dict
 
     @staticmethod
@@ -553,7 +558,9 @@ class SrpmImport(Import):
         """
         Returns release of srpm
         """
-        return self.__srpm_metadata['release']
+        # Remove ~bootstrap
+        final_string = self.__srpm_metadata['release'].replace('~bootstrap', '')
+        return final_string
 
     @property
     def part_of_module(self):
