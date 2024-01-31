@@ -758,7 +758,10 @@ class GitImport(Import):
                 raise err.ConfigurationError(f'sources files are not supported with {self.upstream_lookaside}')
             metafile_to_use = sources_file
         else:
-            raise err.GenericError('sources or metadata file NOT found')
+            #raise err.GenericError('sources or metadata file NOT found')
+            print('WARNING: There was no sources or metadata found. Making blank file.')
+            with open(metadata_file, 'w+') as metadata_handle:
+                pass
 
         sources_dict = self.parse_metadata_file(metafile_to_use)
 
