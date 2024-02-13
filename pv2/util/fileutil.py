@@ -46,8 +46,8 @@ def get_checksum(file_path: str, hashtype: str = 'sha256') -> str:
     Borrowed from empanadas with some modifications
     """
     # We shouldn't be using sha1 or md5.
-    if hashtype in ('sha', 'sha1', 'md5'):
-        raise err.ProvidedValueError(f'{hashtype} is not allowed.')
+    #if hashtype in ('sha', 'sha1', 'md5'):
+    #    raise err.ProvidedValueError(f'{hashtype} is not allowed.')
 
     try:
         checksum = hashlib.new(hashtype)
