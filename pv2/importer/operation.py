@@ -620,6 +620,7 @@ class GitImport(Import):
             scl_mode: bool = False,
             scl_package: str = '',
             alternate_spec_name: str = '',
+            preconv_names: bool = False,
             dest_lookaside: str = '/var/www/html/sources',
             source_git_protocol: str = 'https',
             dest_branch: str = '',
@@ -644,6 +645,9 @@ class GitImport(Import):
         if source_git_protocol == 'ssh':
             full_source_git_url_path = f'{source_git_user}@{source_git_url_path}'
 
+        if preconv_names:
+            package = package.replace('+', 'plus')
+
         self.__source_git_url = f'{source_git_protocol}://{full_source_git_url_path}/{source_git_org_path}/{package}.git'
         self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_url_path}/{dest_org}/{package}.git'
         self.__dist_prefix = distprefix
@@ -654,6 +658,7 @@ class GitImport(Import):
         self.__upstream_lookaside = upstream_lookaside
         self.__upstream_lookaside_url = self.get_lookaside_template_path(upstream_lookaside)
         self.__alternate_spec_name = alternate_spec_name
+        self.__preconv_names = preconv_names
         self.__aws_access_key_id = aws_access_key_id
         self.__aws_access_key = aws_access_key
         self.__aws_bucket = aws_bucket

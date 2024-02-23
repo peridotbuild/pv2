@@ -39,6 +39,7 @@ git_parser.add_argument('--dest-giturl', type=str, required=True)
 git_parser.add_argument('--dest-gitorg', type=str, required=False, default='rpms')
 git_parser.add_argument('--dest-branch', type=str, required=False, default='')
 git_parser.add_argument('--release', type=str, required=False, default='')
+git_parser.add_argument('--preconv-names', action='store_true', help='Convert + to plus first')
 git_parser.add_argument('--distprefix', type=str, required=False, default='el')
 git_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
 git_parser.add_argument('--upstream-lookaside',
