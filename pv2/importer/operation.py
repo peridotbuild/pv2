@@ -645,11 +645,12 @@ class GitImport(Import):
         if source_git_protocol == 'ssh':
             full_source_git_url_path = f'{source_git_user}@{source_git_url_path}'
 
+        package_name = package
         if preconv_names:
-            package = package.replace('+', 'plus')
+            package_name = package.replace('+', 'plus')
 
-        self.__source_git_url = f'{source_git_protocol}://{full_source_git_url_path}/{source_git_org_path}/{package}.git'
-        self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_url_path}/{dest_org}/{package}.git'
+        self.__source_git_url = f'{source_git_protocol}://{full_source_git_url_path}/{source_git_org_path}/{package_name}.git'
+        self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_url_path}/{dest_org}/{package_name}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
         self.__source_branch = source_branch
