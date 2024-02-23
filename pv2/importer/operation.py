@@ -864,8 +864,11 @@ class GitImport(Import):
         """
         Returns the translated URL to obtain sources
         """
+        rpm_name = self.rpm_name
+        if self.preconv_names:
+            rpm_name = self.rpm_name_replace
         dict_template = {
-                'PKG_NAME': self.rpm_name,
+                'PKG_NAME': rpm_name,
                 'FILENAME': filename,
                 'HASH_TYPE': hashtype.lower(),
                 'HASH': checksum
@@ -952,6 +955,13 @@ class GitImport(Import):
         Returns destination local lookaside
         """
         return self.__dest_lookaside
+
+    @property
+    def preconv_names(self):
+        """
+        Returns if names are being preconverted
+        """
+        return self.__preconv_names
 
 class ModuleImport(Import):
     """
