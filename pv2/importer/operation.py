@@ -424,7 +424,7 @@ class SrpmImport(Import):
         than uploaded to lookaside.
         """
         check_repo = gitutil.lsremote(self.git_url)
-        git_repo_path = f'/var/tmp/{self.rpm_name}'
+        git_repo_path = f'/var/tmp/{self.rpm_name_replace}'
         branch = self.__branch
         repo_tags = []
 
