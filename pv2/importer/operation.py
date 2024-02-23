@@ -352,6 +352,7 @@ class SrpmImport(Import):
             distprefix: str = 'el',
             git_user: str = 'git',
             org: str = 'rpms',
+            preconv_names: bool = False,
             dest_lookaside: str = '/var/www/html/sources',
             verify_signature: bool = False,
             aws_access_key_id: str = '',
@@ -373,7 +374,12 @@ class SrpmImport(Import):
         self.__dest_lookaside = dest_lookaside
 
         pkg_name = self.__srpm_metadata['name']
-        git_url = f'ssh://{git_user}@{git_url_path}/{org}/{pkg_name}.git'
+
+        package_name = pkg_name
+        if preconv_names:
+            package_name = pkg_name.replace('+', 'plus')
+
+        git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package_name}.git'
         self.__git_url = git_url
 
         file_name_search_srpm_res = re.search(r'.*?\.src\.rpm$',
@@ -547,6 +553,14 @@ class SrpmImport(Import):
         return self.__srpm_metadata['name']
 
     @property
+    def rpm_name_replace(self):
+        """
+        Returns name of srpm
+        """
+        new_name = self.__srpm_metadata['name'].replace('+', 'plus')
+        return new_name
+
+    @property
     def rpm_version(self):
         """
         Returns version of srpm
@@ -574,14 +588,6 @@ class SrpmImport(Import):
             return True
 
         return False
-
-    @property
-    def rpm_name_replace(self):
-        """
-        Returns a "fixed" version of the RPM name
-        """
-        new_name = self.__srpm_metadata['name'].replace('+', 'plus')
-        return new_name
 
     @property
     def distprefix(self):
