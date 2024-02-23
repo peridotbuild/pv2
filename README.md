@@ -7,19 +7,19 @@
 ![license](https://img.shields.io/github/license/peridotbuild/pv2)
 
 pv2 is a backend module framework for building and development. Initially
-designed as a POC to support peridot's transition to python, it provides
-utilities that can be used for developers in and outside of the projects
-in the RESF (such as Rocky Linux).
+designed as a POC to support peridot's potential transition to python, it
+provides utilities that can be used for developers in and outside of the
+projects in the RESF (such as Rocky Linux).
 
 ## Requirements
 
 * An RPM Distribution
 
   * Fedora
-  * Enterprise Linux 8, 9+ recommended
-  * CentOS Stream 8, 9+ recommended
+  * Enterprise Linux 9+ recommended
+  * CentOS Stream 9+ recommended
 
-* Python 3.6 or higher - Python 3.9+ recommended
+* Python 3.9 or higher
 * rpm-build
 * A few python modules
 
@@ -33,6 +33,10 @@ in the RESF (such as Rocky Linux).
 
   * \*-rpm-macros
   * \*-srpm-macros
+
+* additional packages either in Fedora Linux or EPEL
+
+  * rpmautospec-rpm-macros
 
 ## Example Scripts
 
