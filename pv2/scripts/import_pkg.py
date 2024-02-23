@@ -91,6 +91,7 @@ def main():
                 dest_git_url_path=results.dest_giturl,
                 dest_org=results.dest_gitorg,
                 release=results.release,
+                preconv_names=results.preconv_names,
                 source_branch=results.source_branch,
                 dest_branch=results.dest_branch,
                 upstream_lookaside=results.upstream_lookaside,
