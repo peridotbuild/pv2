@@ -813,6 +813,7 @@ class GitImport(Import):
         # do rpm autochangelog logic here
         if HAS_RPMAUTOSPEC and os.path.exists(source_git_repo_changelog):
             # Check that the spec file really has %autochangelog
+            AUTOCHANGELOG = False
             for line in source_git_repo_spec:
                 if re.search('^%autochangelog', line):
                     print('autochangelog found')
