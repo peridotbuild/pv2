@@ -815,7 +815,7 @@ class GitImport(Import):
             # Check that the spec file really has %autochangelog
             AUTOCHANGELOG = False
             for line in source_git_repo_spec:
-                if re.search('^%autochangelog', line):
+                if re.search(r'^%autochangelog', line):
                     print('autochangelog found')
                     AUTOCHANGELOG = True
             # It was easier to do this then reimplement logic
