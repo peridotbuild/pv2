@@ -814,16 +814,18 @@ class GitImport(Import):
         if HAS_RPMAUTOSPEC and os.path.exists(source_git_repo_changelog):
             # Check that the spec file really has %autochangelog
             AUTOCHANGELOG = False
-            for line in source_git_repo_spec:
-                if re.search(r'^%autochangelog', line):
-                    print('autochangelog found')
-                    AUTOCHANGELOG = True
+            with open(source_git_repo_spec, 'r') as spec_file:
+                for line in spec_file:
+                    if re.match(r'^%autochangelog', line):
+                        print('autochangelog found')
+                        AUTOCHANGELOG = True
+                spec_file.close()
             # It was easier to do this then reimplement logic
             if AUTOCHANGELOG:
                 try:
                     rpmautocl.process_distgit(
-                            source_git_repo_path,
-                            '/tmp/{self.rpm_name}.spec'
+                            source_git_repo_spec,
+                            f'/tmp/{self.rpm_name}.spec'
                     )
                 except Exception as exc:
                     raise err.GenericError('There was an error with autospec.') from exc
