@@ -22,6 +22,13 @@ from pv2.util import uploader as upload
 #except ImportError:
 #    HAS_GI = False
 
+try:
+    from rpmautospec.subcommands import process_distgit as rpmautocl
+    HAS_RPMAUTOSPEC = True
+except ImportError:
+    HAS_RPMAUTOSPEC = False
+    print('WARNING! rpmautospec was not found on this system and is not loaded.')
+
 __all__ = [
         'Import',
         'SrpmImport',
@@ -688,6 +695,7 @@ class GitImport(Import):
         check_dest_repo = gitutil.lsremote(self.dest_git_url)
         source_git_repo_path = f'/var/tmp/{self.rpm_name}-source'
         source_git_repo_spec = f'{source_git_repo_path}/{self.rpm_name}.spec'
+        source_git_repo_changelog = f'{source_git_repo_path}/changelog'
         dest_git_repo_path = f'/var/tmp/{self.rpm_name}'
         metadata_file = f'{source_git_repo_path}/.{self.rpm_name}.metadata'
         sources_file = f'{source_git_repo_path}/sources'
@@ -801,6 +809,28 @@ class GitImport(Import):
 
         if not os.path.exists(source_git_repo_spec) and len(self.alternate_spec_name) == 0:
             source_git_repo_spec = self.find_spec_file(source_git_repo_path)
+
+        # do rpm autochangelog logic here
+        if HAS_RPMAUTOSPEC and os.path.exists(source_git_repo_changelog):
+            # Check that the spec file really has %autochangelog
+            for line in source_git_repo_spec:
+                if re.search('^%autochangelog', line):
+                    print('autochangelog found')
+                    AUTOCHANGELOG = True
+            # It was easier to do this then reimplement logic
+            if AUTOCHANGELOG:
+                try:
+                    rpmautocl.process_distgit(
+                            source_git_repo_path,
+                            '/tmp/{self.rpm_name}.spec'
+                    )
+                except Exception as exc:
+                    raise err.GenericError('There was an error with autospec.') from exc
+
+                shutil.copy(f'/tmp/{self.rpm_name}.spec',
+                            f'{source_git_repo_path}/{self.rpm_name}.spec')
+
+                os.remove(f'/tmp/{self.rpm_name}.spec')
 
         # attempt to pack up the RPM, get metadata
         packed_srpm = self.pack_srpm(source_git_repo_path,
