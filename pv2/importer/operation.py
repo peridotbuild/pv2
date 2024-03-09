@@ -811,7 +811,8 @@ class GitImport(Import):
             source_git_repo_spec = self.find_spec_file(source_git_repo_path)
 
         # do rpm autochangelog logic here
-        if HAS_RPMAUTOSPEC and os.path.exists(source_git_repo_changelog):
+        #if HAS_RPMAUTOSPEC and os.path.exists(source_git_repo_changelog):
+        if HAS_RPMAUTOSPEC:
             # Check that the spec file really has %autochangelog
             AUTOCHANGELOG = False
             with open(source_git_repo_spec, 'r') as spec_file:
