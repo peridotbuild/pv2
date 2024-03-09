@@ -1143,7 +1143,7 @@ class ModuleImport(Import):
 
         with open(modulemd_file, 'r') as module_yaml:
             content = module_yaml.read()
-            content_new = re.sub('ref:\s+(.*)', f'ref: {dest_branch}', content)
+            content_new = re.sub(r'ref:\s+(.*)', f'ref: {dest_branch}', content)
             module_yaml.close()
 
         # Write to the root
