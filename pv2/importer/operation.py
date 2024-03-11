@@ -780,12 +780,13 @@ class GitImport(Import):
             metafile_to_use = sources_file
         else:
             #raise err.GenericError('sources or metadata file NOT found')
-            print('WARNING: There was no sources or metadata found. Making blank file.')
+            # There isn't a reason to make a blank file right now.
+            print('WARNING: There was no sources or metadata found.')
             with open(metadata_file, 'w+') as metadata_handle:
                 pass
 
         if not metafile_to_use:
-            print('There was no metadata file found. Skipping.')
+            print('Source: There was no metadata file found. Skipping import attempt.')
             return False
 
         sources_dict = self.parse_metadata_file(metafile_to_use)
