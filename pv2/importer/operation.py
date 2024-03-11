@@ -765,6 +765,7 @@ class GitImport(Import):
         # Within the confines of the source git repo, we need to find a
         # "sources" file or a metadata file. One of these will determine which
         # route we take.
+        metafile_to_use = None
         if os.path.exists(metadata_file):
             no_metadata_list = ['stream', 'fedora']
             if any(ignore in self.upstream_lookaside for ignore in no_metadata_list):
@@ -782,6 +783,10 @@ class GitImport(Import):
             print('WARNING: There was no sources or metadata found. Making blank file.')
             with open(metadata_file, 'w+') as metadata_handle:
                 pass
+
+        if not metafile_to_use:
+            print('There was no metadata file found. Skipping.')
+            return False
 
         sources_dict = self.parse_metadata_file(metafile_to_use)
 
