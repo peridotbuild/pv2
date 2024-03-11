@@ -139,8 +139,11 @@ def tag(repo, tag_name:str, message: str):
 
 def lsremote(url):
     """
-    Helps check if a repo exists, and if it does, return references. If not,
-    return None and assume it doesn't exist.
+    Helps check if a repo exists.
+
+    If repo exists: return references
+    If repo exists and is completely empty: return empty dict
+    If repo does not exist: return None
     """
     remote_refs = {}
     git_cmd = rawgit.cmd.Git()
@@ -153,5 +156,6 @@ def lsremote(url):
 
     for ref in git_cmd.ls_remote(url).split('\n'):
         hash_ref_list = ref.split('\t')
-        remote_refs[hash_ref_list[1]] = hash_ref_list[0]
+        if len(hash_ref_list) > 1:
+            remote_refs[hash_ref_list[1]] = hash_ref_list[0]
     return remote_refs
