@@ -788,7 +788,7 @@ class GitImport(Import):
         if not metafile_to_use:
             #print('Source: There was no metadata file found. Skipping import attempt.')
             print('Source: There was no metadata file found. Import may not work correctly.')
-            metafile_to_use = {}
+            metafile_to_use = ''
             #self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
             #return False
 
