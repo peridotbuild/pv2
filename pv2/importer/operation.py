@@ -788,11 +788,13 @@ class GitImport(Import):
         if not metafile_to_use:
             #print('Source: There was no metadata file found. Skipping import attempt.')
             print('Source: There was no metadata file found. Import may not work correctly.')
-            metafile_to_use = ''
+            #metafile_to_use = ''
             #self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
             #return False
 
-        sources_dict = self.parse_metadata_file(metafile_to_use)
+        sources_dict = {}
+        if metafile_to_use:
+            sources_dict = self.parse_metadata_file(metafile_to_use)
 
         # We need to check if there is a SPECS directory and make a SOURCES
         # directory if it doesn't exist
