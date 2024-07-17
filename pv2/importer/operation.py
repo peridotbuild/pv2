@@ -1383,7 +1383,7 @@ class JavaPortableImport(Import):
         """
         Returns the branch
         """
-        return self.__java_name
+        return self.__branch
 
     @property
     def java_git_url(self):
