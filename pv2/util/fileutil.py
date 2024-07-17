@@ -13,7 +13,8 @@ __all__ = [
         'filter_files_inverse',
         'get_checksum',
         'get_magic_file',
-        'get_magic_content'
+        'get_magic_content',
+        'mkdir'
 ]
 
 def filter_files(directory_path: str, filter_filename: str) -> list:
@@ -82,3 +83,16 @@ def get_magic_content(data):
     """
     detect = magic.detect_from_content(data)
     return detect
+
+def mkdir(file_path: str):
+    """
+    Creates a new directory
+    """
+    #if os.path.exists(file_path):
+    #    raise err.GenericError('Path already exists')
+    try:
+        os.mkdir(file_path)
+    except FileExistsError as exc:
+        raise err.GenericError('Path already exists') from exc
+    except Exception as exc:
+        raise err.GenericError(f'There was another error: {exc}') from exc
