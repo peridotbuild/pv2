@@ -34,7 +34,8 @@ __all__ = [
         'SrpmImport',
         'GitImport',
         'ModuleImport',
-        'JavaPortableImport'
+        'JavaPortableImport',
+        'SourceCodeImport'
 ]
 # todo: add in logging and replace print with log
 
@@ -1398,3 +1399,19 @@ class JavaPortableImport(Import):
         Returns the portable java git URL
         """
         return self.__portable_git_url
+
+class SourceCodeImport(Import):
+    """
+    Grabs source code of a package and imports it to a separate org/repo for
+    code only.
+    """
+    # pylint: disable=too-many-arguments
+    def __init__(
+            self,
+            pkg_name: str,
+            git_url_path: str,
+            branch: str,
+            git_user: str = 'git',
+            org: str = 'src',
+    ):
+        print()
