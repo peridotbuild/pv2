@@ -18,7 +18,8 @@ dependencies = [
   "lxml >= 4.6.5",
   "file-magic >= 0.4.0",
   "pycurl >= 7.43.0.6",
-  "boto3 >= 1.22.10"
+  "boto3 >= 1.22.10",
+  "pulpcore-client >= 3.58.0"
 ]
 
 [project.urls]
