@@ -640,6 +640,7 @@ class GitImport(Import):
             source_git_protocol: str = 'https',
             dest_branch: str = '',
             distprefix: str = 'el',
+            distcustom: str = '',
             source_git_user: str = 'git',
             dest_git_user: str = 'git',
             dest_org: str = 'rpms',
@@ -678,6 +679,9 @@ class GitImport(Import):
         self.__aws_access_key_id = aws_access_key_id
         self.__aws_access_key = aws_access_key
         self.__aws_bucket = aws_bucket
+
+        if len(distcustom) > 0:
+            self.__dist_tag = f'.{distcustom}'
 
         if len(dest_branch) > 0:
             self.__dest_branch = dest_branch
