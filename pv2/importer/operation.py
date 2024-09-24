@@ -912,6 +912,7 @@ class GitImport(Import):
             ref = gitutil.tag(dest_repo, import_tag, commit_msg)
             gitutil.push(dest_repo, ref=ref)
             self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
+            print(f'Imported: {import_tag}')
             return True
         print('Nothing to push')
         self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
