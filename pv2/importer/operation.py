@@ -838,14 +838,14 @@ class GitImport(Import):
                     if re.match(r'^%autochangelog', line):
                         print('autochangelog found')
                         AUTOCHANGELOG = True
-                    if re.match(r'%autorelease', line):
+                    if re.match(r'^Release:.*%autorelease', line):
                         print('autorelease found')
                         AUTORELEASE = True
                 spec_file.close()
             # It was easier to do this then reimplement logic
             if AUTOCHANGELOG or AUTORELEASE:
                 try:
-                    rpmautocl.process_distgit(
+                    rpmautocl.do_process_distgit(
                             source_git_repo_spec,
                             f'/tmp/{self.rpm_name}.spec'
                     )
