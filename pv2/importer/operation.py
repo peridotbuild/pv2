@@ -381,6 +381,7 @@ class SrpmImport(Import):
         self.__release = release
         self.__dist_prefix = distprefix
         self.__dest_lookaside = dest_lookaside
+        self.__preconv_names = preconv_names
 
         pkg_name = self.__srpm_metadata['name']
 
@@ -611,6 +612,13 @@ class SrpmImport(Import):
         Returns the destination path for the local lookaside
         """
         return self.__dest_lookaside
+
+    @property
+    def preconv_names(self):
+        """
+        Returns if names are being preconverted
+        """
+        return self.__preconv_names
 
 # pylint: disable=too-many-instance-attributes
 class GitImport(Import):
