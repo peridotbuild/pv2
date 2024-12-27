@@ -165,8 +165,13 @@ class Import:
                 # just do it this way. It gets around weird gitignores and
                 # weird srpmproc behavior.
                 if 'PGP public' in magic.name:
-                    source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
-                if magic.encoding == 'binary':
+                    # source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
+                    # Going to allow PGP keys again.
+                    continue
+                # binary files should be brought to lookaside, but certificate
+                # files in binary format don't have to be, it doesn't quite
+                # make sense. this should get around that.
+                if magic.encoding == 'binary' and 'Certificate,' not in magic.name:
                     source_dict[f'SOURCES/{file.name}'] = fileutil.get_checksum(full_path)
 
                 # This is a list of possible file names that should be in
