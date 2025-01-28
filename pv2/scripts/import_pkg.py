@@ -17,6 +17,7 @@ rpm_parser.add_argument('--giturl', type=str, required=True)
 rpm_parser.add_argument('--branch', type=str, required=True)
 rpm_parser.add_argument('--srpm', type=str, required=True)
 rpm_parser.add_argument('--release', type=str, required=False, default='')
+rpm_parser.add_argument('--preconv-names', action='store_true', help='Convert + to plus first')
 rpm_parser.add_argument('--gitorg', type=str, required=False, default='rpms')
 rpm_parser.add_argument('--distprefix', type=str, required=False, default='el')
 rpm_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
@@ -69,6 +70,7 @@ def main():
                 git_url_path=results.giturl,
                 srpm_path=results.srpm,
                 release=results.release,
+                preconv_names=results.preconv_names,
                 branch=results.branch,
                 distprefix=results.distprefix,
                 git_user=results.gituser,
