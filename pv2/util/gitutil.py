@@ -1,5 +1,5 @@
 # -*-:python; coding:utf-8; -*-
-# author: Louis Abel <label@rockylinux.org>
+# author: Louis Abel <label@resf.org>
 """
 Git Utilities and Accessories
 """
@@ -112,7 +112,7 @@ def init(
     return repo
 
 
-def push(repo, ref=None):
+def push(repo, ref=None, force=False):
     """
     push what we want
 
@@ -122,19 +122,19 @@ def push(repo, ref=None):
     active_branch = f'{repo.active_branch.name}:{repo.active_branch.name}'
     try:
         if ref:
-            repo.remote('origin').push(active_branch).raise_if_error()
-            repo.remote('origin').push(ref).raise_if_error()
+            repo.remote('origin').push(active_branch, force=force).raise_if_error()
+            repo.remote('origin').push(ref, force=force).raise_if_error()
         else:
-            repo.remote('origin').push(active_branch).raise_if_error()
+            repo.remote('origin').push(active_branch, force=force).raise_if_error()
     # pylint: disable=no-member
     except gitexc.CommandError as exc:
         raise err.GitPushError('Unable to push commit to remote') from exc
 
-def tag(repo, tag_name:str, message: str):
+def tag(repo, tag_name:str, message: str, force=False):
     """
     make a tag with message
     """
-    ref = repo.create_tag(tag_name, message=message)
+    ref = repo.create_tag(tag_name, message=message, force=force)
     return ref
 
 def lsremote(url):

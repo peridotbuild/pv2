@@ -1,5 +1,5 @@
 # -*-:python; coding:utf-8; -*-
-# author: Louis Abel <label@rockylinux.org>
+# author: Louis Abel <label@resf.org>
 """
 All constants
 """
@@ -36,6 +36,17 @@ class RpmConstants:
         11: 'SHA224'
     }
 
+    # rpmspec will be used in niche scenarios. several things here are set to
+    # %{nil} because there cases where some spec files can't be parsed properly
+    # without the macros existing, depending on how the system was setup.
+    RPMSPEC_DEFINITIONS = {
+        "__python3": "/usr/bin/python3",
+        "forgemeta": "%{nil}",
+        "gometa": "%{nil}",
+        "ldconfig_scriptlets(n:)": "%{nil}",
+        "pesign": "%{nil}",      # some SB packages don't parse without this set
+        "efi_has_alt_arch": "0", # some arches simply don't have efi, so always 0
+    }
 
 # pylint: disable=too-few-public-methods
 class ErrorConstants:

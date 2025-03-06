@@ -1,9 +1,11 @@
 # -*- mode:python; coding:utf-8; -*-
-# Louis Abel <label@rockylinux.org>
+# Louis Abel <label@resf.org>
 """
 Utility functions for RPM's
 """
+import os
 import re
+import shutil
 import stat
 import lxml.etree
 from pv2.util import error as err
@@ -18,6 +20,16 @@ try:
 except ImportError:
     rpm = None
 
+# We should have rpmautospec available. There is a good chance that if pv2 is
+# used to import from one place to another, and the source uses %autochangelog,
+# we should able to fill it in on import.
+try:
+    from rpmautospec.subcommands import process_distgit
+    HAS_RPMAUTOSPEC = True
+except ImportError:
+    HAS_RPMAUTOSPEC = False
+    print('WARNING! rpmautospec was not found on this system and is not loaded.')
+
 __all__ = [
         'add_rpm_key',
         'compare_rpms',
@@ -30,7 +42,8 @@ __all__ = [
         'is_debug_package',
         'is_rpm',
         'split_rpm_by_header',
-        'verify_rpm_signature'
+        'verify_rpm_signature',
+        'rpmautocl'
 ]
 
 # NOTES TO THOSE RUNNING PYLINT OR ANOTHER TOOL
@@ -408,3 +421,41 @@ def add_rpm_key(file_name: str):
     # pylint: disable=no-member
     except rpm.error as exc:
         raise err.RpmSigError(f'Unable to import signature: {exc}')
+
+def rpmautocl(path_to_spec: str):
+    """
+    Performs rpmautospec commands.
+    """
+    if not HAS_RPMAUTOSPEC:
+        return None
+
+    AUTOCHANGELOG = False
+    AUTORELEASE = False
+
+    with open(path_to_spec, 'r') as spec_file:
+        for line in spec_file:
+            if re.match(r'^%autochangelog', line):
+                print('autochangelog found')
+                AUTOCHANGELOG = True
+            if re.match(r'^Release:.*%autorelease', line):
+                print('autorelease found')
+                AUTORELEASE = True
+        spec_file.close()
+        # It was easier to do this then reimplement logic
+        if AUTOCHANGELOG or AUTORELEASE:
+            try:
+                rpmautocl.do_process_distgit(
+                        path_to_spec,
+                        '/tmp/temporary_name.spec'
+                )
+            except Exception as exc:
+                raise err.GenericError('There was an error with autospec.') from exc
+            shutil.copy('/tmp/temporary_name.spec',
+                        f'{path_to_spec}')
+
+            os.remove(f'/tmp/temporary_name.spec')
+
+        else:
+            print('No auto macros found nor processed')
+
+    return True

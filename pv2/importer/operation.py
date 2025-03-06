@@ -1,5 +1,5 @@
 # -*-:python; coding:utf-8; -*-
-# author: Louis Abel <label@rockylinux.org>
+# author: Louis Abel <label@resf.org>
 """
 Importer accessories
 """
@@ -21,13 +21,6 @@ from pv2.util import uploader as upload
 #    HAS_GI = True
 #except ImportError:
 #    HAS_GI = False
-
-try:
-    from rpmautospec.subcommands import process_distgit as rpmautocl
-    HAS_RPMAUTOSPEC = True
-except ImportError:
-    HAS_RPMAUTOSPEC = False
-    print('WARNING! rpmautospec was not found on this system and is not loaded.')
 
 __all__ = [
         'Import',
@@ -841,34 +834,9 @@ class GitImport(Import):
             source_git_repo_spec = self.find_spec_file(source_git_repo_path)
 
         # do rpm autochangelog logic here
-        #if HAS_RPMAUTOSPEC and os.path.exists(source_git_repo_changelog):
-        if HAS_RPMAUTOSPEC:
-            # Check that the spec file really has %autochangelog
-            AUTOCHANGELOG = False
-            AUTORELEASE = False
-            with open(source_git_repo_spec, 'r') as spec_file:
-                for line in spec_file:
-                    if re.match(r'^%autochangelog', line):
-                        print('autochangelog found')
-                        AUTOCHANGELOG = True
-                    if re.match(r'^Release:.*%autorelease', line):
-                        print('autorelease found')
-                        AUTORELEASE = True
-                spec_file.close()
-            # It was easier to do this then reimplement logic
-            if AUTOCHANGELOG or AUTORELEASE:
-                try:
-                    rpmautocl.do_process_distgit(
-                            source_git_repo_spec,
-                            f'/tmp/{self.rpm_name}.spec'
-                    )
-                except Exception as exc:
-                    raise err.GenericError('There was an error with autospec.') from exc
-
-                shutil.copy(f'/tmp/{self.rpm_name}.spec',
-                            f'{source_git_repo_path}/{self.rpm_name}.spec')
-
-                os.remove(f'/tmp/{self.rpm_name}.spec')
+        autospec_return = rpmutil.rpmautocl(source_git_repo_spec)
+        if not autospec_return:
+            print('WARNING! rpmautospec was not found on this system. autospec logic is ignored.')
 
         # attempt to pack up the RPM, get metadata
         packed_srpm = self.pack_srpm(source_git_repo_path,

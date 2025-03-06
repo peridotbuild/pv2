@@ -1,5 +1,5 @@
 # -*- mode:python; coding:utf-8; -*-
-# Louis Abel <label@rockylinux.org>
+# Louis Abel <label@resf.org>
 """
 Mock runners and limited error handler
 """
