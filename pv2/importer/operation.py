@@ -357,6 +357,7 @@ class SrpmImport(Import):
             release: str = '',
             branch: str = '',
             distprefix: str = 'el',
+            distcustom: str = '',
             git_user: str = 'git',
             org: str = 'rpms',
             preconv_names: bool = False,
