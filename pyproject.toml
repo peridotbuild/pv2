@@ -1,14 +1,14 @@
 [project]
 name = "pv2"
-version = "0.13.0"
+version = "0.14.0"
 description = "PV2 backend framework module"
 readme = "README.md"
 authors = [
-  { name = "Louis Abel", email = "label@rockylinux.org" }
+  { name = "Louis Abel", email = "label@resf.org" }
 ]
 
 maintainers = [
-  { name = "Louis Abel", email = "label@rockylinux.org" }
+  { name = "Louis Abel", email = "label@resf.org" }
 ]
 
 requires-python = ">=3.9"
@@ -34,5 +34,7 @@ package-dir = { "pv2" = "pv2" }
 
 [tool.poetry.scripts]
 import_pkg = "pv2.scripts.import_pkg:run"
+import_module = "pv2.scripts.import_module:run"
+import_java = "pv2.scripts.import_java:run"
 #pkg_info = "pv2.scripts.pkg_info:run"
 #build_pkg = "pv2.scripts.build_pkg:run"

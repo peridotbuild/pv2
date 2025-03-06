@@ -444,7 +444,7 @@ def rpmautocl(path_to_spec: str):
         # It was easier to do this then reimplement logic
         if AUTOCHANGELOG or AUTORELEASE:
             try:
-                rpmautocl.do_process_distgit(
+                process_distgit.do_process_distgit(
                         path_to_spec,
                         '/tmp/temporary_name.spec'
                 )
