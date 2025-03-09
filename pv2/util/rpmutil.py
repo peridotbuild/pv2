@@ -43,6 +43,9 @@ __all__ = [
         'is_rpm',
         'split_rpm_by_header',
         'verify_rpm_signature',
+        'spec_autosetup',
+        'spec_autochangelog',
+        'spec_autorelease',
         'rpmautocl'
 ]
 
@@ -422,6 +425,35 @@ def add_rpm_key(file_name: str):
     except rpm.error as exc:
         raise err.RpmSigError(f'Unable to import signature: {exc}')
 
+# The spec file will be brought in as a list and read as such
+def spec_autosetup(rpm_spec: list[str]) -> bool:
+    """
+    Determines if there's any type of autosetup
+    """
+    # Every one of these shouldn't be commented if they're being used. We don't
+    # want to erroneously find it if it's in a comment and act on it. That
+    # would be dumb.
+    pattern = re.compile(r'^\s?%(autosetup|forgeautosetup|autopatch)')
+    return any(pattern.match(line) for line in rpm_spec)
+
+def spec_autochangelog(rpm_spec: list[str]) -> bool:
+    """
+    Determines if %autochangelog is in the rpm spec
+    """
+    # This makes sure that %autochangelog isn't commented out so that way we
+    # don't get confused. And just in case a packager messages up somewhere,
+    # check for whitespace. Very rare that this should happen.
+    pattern = re.compile(r'^\s?%autochangelog')
+    return any(pattern.match(line) for line in rpm_spec)
+
+def spec_autorelease(rpm_spec: list[str]) -> bool:
+    """
+    Determines if %autorelease is in the rpm spec
+    """
+    # Release is ALWAYS at the beginning of a line.
+    pattern = re.compile(r'^Release:.*%autorelease')
+    return any(pattern.match(line) for line in rpm_spec)
+
 def rpmautocl(path_to_spec: str):
     """
     Performs rpmautospec commands.
@@ -431,31 +463,30 @@ def rpmautocl(path_to_spec: str):
 
     AUTOCHANGELOG = False
     AUTORELEASE = False
+    spec_file = generic.read_file_to_list(path_to_spec)
 
-    with open(path_to_spec, 'r') as spec_file:
-        for line in spec_file:
-            if re.match(r'^%autochangelog', line):
-                print('autochangelog found')
-                AUTOCHANGELOG = True
-            if re.match(r'^Release:.*%autorelease', line):
-                print('autorelease found')
-                AUTORELEASE = True
-        spec_file.close()
-        # It was easier to do this then reimplement logic
-        if AUTOCHANGELOG or AUTORELEASE:
-            try:
-                process_distgit.do_process_distgit(
-                        path_to_spec,
-                        '/tmp/temporary_name.spec'
-                )
-            except Exception as exc:
-                raise err.GenericError('There was an error with autospec.') from exc
-            shutil.copy('/tmp/temporary_name.spec',
-                        f'{path_to_spec}')
+    autochangelog_found = spec_autochangelog(spec_file)
+    autorelease_found = spec_autorelease(spec_file)
 
-            os.remove(f'/tmp/temporary_name.spec')
+    if autochangelog_found:
+        AUTOCHANGELOG = True
+    if autorelease_found:
+        AUTORELEASE = True
 
-        else:
-            print('No auto macros found nor processed')
+    if AUTOCHANGELOG or AUTORELEASE:
+        try:
+            process_distgit.do_process_distgit(
+                    path_to_spec,
+                    '/tmp/temporary_name.spec'
+            )
+        except Exception as exc:
+            raise err.GenericError('There was an error with autospec.') from exc
+        shutil.copy('/tmp/temporary_name.spec',
+                    f'{path_to_spec}')
+
+        os.remove('/tmp/temporary_name.spec')
+
+    else:
+        print('No auto macros found nor processed')
 
     return True

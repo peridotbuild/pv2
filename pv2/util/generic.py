@@ -5,8 +5,10 @@ import os
 import sys
 import datetime
 import hashlib
-import pycurl
+# I want to at some point look into pathlib
+# from pathlib import Path
 from urllib.parse import quote as urlquote
+import pycurl
 from pv2.util import error as err
 from pv2.util import fileutil
 
@@ -20,7 +22,9 @@ __all__ = [
         'to_unicode',
         'trim_non_empty_string',
         'hash_checker',
-        'download_file'
+        'download_file',
+        'read_file_to_list',
+        'write_file_from_list'
 ]
 
 def to_unicode(string: str) -> str:
@@ -171,3 +175,23 @@ def download_file(url: str, to_path: str, checksum=None, hashtype=None):
     if file_checksum != checksum:
         os.remove(to_path)
         raise err.DownloadError('Checksums do not match for downloaded file')
+
+def read_file_to_list(file_path: str) -> list[str]:
+    """
+    Reads a file into a list
+    """
+    with open(file_path, "r") as file_to_read:
+        file_data = [line.rstrip("\n") for line in file_to_read.readlines()]
+        file_to_read.close()
+
+    if file_data is None or not file_data:
+        raise err.FileNotFound("File is empty, doesn't exist, or is not valid")
+
+    return file_data
+
+def write_file_from_list(file_path: str, data: list[str]):
+    """
+    Takes a list of strings and writes them to a file
+    """
+    with open(file_path, "w+") as file_data:
+        file_data.writelines(f"{line}\n" for line in data)
