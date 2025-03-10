@@ -1,0 +1,21 @@
+# March 8, 2025
+Implement most os.path related operations to pathlib
+
+Rationale: os.path is quite clunky. A precursory look at pathlib tells me:
+
+* Using pathlib makes it clearer what a path is vs a string
+* It is a more modern way to handle file system paths
+* Since python 3.6, pathlib paths can be passed into shutil and os.path
+* Can be used cross-platform (not that this will be used on windows)
+
+Only downside is it may not handle s3 URL's very well, but that may or may not
+be a problem in the future when the support is added.
+
+# March 10, 2025
+Add s3 upload options to general importer
+
+Rationale: It should be possible to pre-emptively upload an artifact into an s3
+bucket before the actual srpmproc stage. The srpmproc stage will generally check
+whatever bucket it is assigned to to see if it's there before import (unless the
+options to not upload is given in whatever manner). Two birds, one stone with
+the imports, essentially.

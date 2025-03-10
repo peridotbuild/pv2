@@ -43,9 +43,9 @@ class S3ProgressPercentage:
 def upload_to_s3(
         input_file,
         bucket,
-        access_key_id: str,
-        access_key: str,
-        dest_name=None
+        access_key_id = None,
+        access_key = None,
+        dest_name = None
     ):
     """
     Uploads an artifact to s3.

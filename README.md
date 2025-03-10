@@ -7,6 +7,8 @@ designed as a POC to support peridot's potential transition to python, it
 provides utilities that can be used for developers in and outside of the
 projects in the RESF (such as Rocky Linux).
 
+For a list of things that I want to look into, check the `TODO` list.
+
 ## Requirements
 
 * An RPM Distribution
@@ -51,3 +53,6 @@ To submit a change, we recommend that you do so on GitHub:
 * Make a new branch based on the `development` branch - Ensure that it is up-to-date
 * Make your changes
 * Send in the PR for review to our `development` branch
+
+**Please ensure that your changes are compatible with at least Python 3.9, as
+that is the current Enterprise Linux 9 python version.**
