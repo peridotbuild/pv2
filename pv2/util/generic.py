@@ -24,7 +24,8 @@ __all__ = [
         'hash_checker',
         'download_file',
         'read_file_to_list',
-        'write_file_from_list'
+        'write_file_from_list',
+        'line_is_comment'
 ]
 
 def to_unicode(string: str) -> str:
@@ -195,3 +196,13 @@ def write_file_from_list(file_path: str, data: list[str]):
     """
     with open(file_path, "w+") as file_data:
         file_data.writelines(f"{line}\n" for line in data)
+
+def line_is_comment(line: str) -> bool:
+    """
+    Determines if this line is a comment
+
+    Potentially move this to generic
+    """
+    return line.startswith("#")
+
+

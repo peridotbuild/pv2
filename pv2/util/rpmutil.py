@@ -13,6 +13,9 @@ from pv2.util import generic
 from pv2.util import processor
 from pv2.util.constants import RpmConstants as rpmconst
 
+# Address all capitalized vars
+# pylint: disable=invalid-name
+
 # We should have the python rpm modules. Forcing `rpm` to be none should make
 # that known to the admin that they did not setup their node correctly.
 try:
@@ -46,6 +49,9 @@ __all__ = [
         'spec_autosetup',
         'spec_autochangelog',
         'spec_autorelease',
+        'spec_line_changelog',
+        'spec_line_version',
+        'spec_line_release',
         'rpmautocl'
 ]
 
@@ -454,6 +460,24 @@ def spec_autorelease(rpm_spec: list[str]) -> bool:
     pattern = re.compile(r'^Release:.*%autorelease')
     return any(pattern.match(line) for line in rpm_spec)
 
+def spec_line_changelog(line: str) -> bool:
+    """
+    Determines if this line is the start of the changelog
+    """
+    return "%changelog" == line.strip('\n \t')
+
+def spec_line_version(line: str) -> bool:
+    """
+    Determines if this line is the Version: directive
+    """
+    return line.startswith("Version:")
+
+def spec_line_release(line: str) -> bool:
+    """
+    Determines if this line is the Release: directive
+    """
+    return line.startswith("Release:")
+
 def rpmautocl(path_to_spec: str):
     """
     Performs rpmautospec commands.
@@ -470,8 +494,10 @@ def rpmautocl(path_to_spec: str):
 
     if autochangelog_found:
         AUTOCHANGELOG = True
+        print('autochangelog found, attempting to append')
     if autorelease_found:
         AUTORELEASE = True
+        print('autorelease found, attempting to evaluate')
 
     if AUTOCHANGELOG or AUTORELEASE:
         try:
