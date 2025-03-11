@@ -4,6 +4,7 @@ File functions
 
 import os
 import hashlib
+from pathlib import Path
 import magic
 from pv2.util import error as err
 
@@ -22,9 +23,10 @@ def filter_files(directory_path: str, filter_filename: str) -> list:
     Filter out specified files
     """
     return_list = []
-    for file in os.scandir(directory_path):
+    directory = Path(directory_path)
+    for file in directory.iterdir():
         if filter_filename(file.name):
-            return_list.append(os.path.join(directory_path, file.name))
+            return_list.append(str(file))
 
     return return_list
 
@@ -33,9 +35,10 @@ def filter_files_inverse(directory_path: str, filter_filename: str) -> list:
     Filter out specified files (inverse)
     """
     return_list = []
-    for file in os.scandir(directory_path):
+    directory = Path(directory_path)
+    for file in directory.iterdir():
         if not filter_filename(file.name):
-            return_list.append(os.path.join(directory_path, file.name))
+            return_list.append(str(file))
 
     return return_list
 
