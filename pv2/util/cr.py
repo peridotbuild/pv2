@@ -5,9 +5,10 @@ about a project's repository, like for generating a summary.
 
 #import os
 #import createrepo_c as cr
+from pv2.util import log as pvlog
 
 __all__ = []
 
 def _warning_cb(warning_type, message):
-    print(f"WARNING: {message}")
+    pvlog.logger.warning("WARNING: %s", message)
     return True

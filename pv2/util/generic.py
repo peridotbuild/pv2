@@ -11,6 +11,7 @@ from urllib.parse import quote as urlquote
 import pycurl
 from pv2.util import error as err
 from pv2.util import fileutil
+from pv2.util import log as pvlog
 
 # General utilities
 __all__ = [
@@ -117,7 +118,7 @@ def hash_checker(data: str) -> str:
 
 def download_file(url: str, to_path: str, checksum=None, hashtype=None):
     """
-    Downloads a file
+    Downloads a file to a specific path
     """
     url = url.encode('utf-8')
     if os.path.exists(to_path):
@@ -127,12 +128,12 @@ def download_file(url: str, to_path: str, checksum=None, hashtype=None):
 
         file_checksum = fileutil.get_checksum(to_path, hashtype=hashtype)
         if file_checksum == checksum:
-            print('File already downloaded and checksum is valid.')
+            pvlog.logger.info('File already downloaded and checksum is valid.')
         else:
             raise err.DownloadError('File exists, but checksum does not match')
 
     # Assume path doesn't exist, download it.
-    print(f'Downloading {to_path}')
+    pvlog.logger.info('Downloading %s', to_path)
     with open(to_path, 'wb') as dlf:
         # todo: add stdout or logging for this
         # pylint: disable=c-extension-no-member
@@ -161,7 +162,7 @@ def download_file(url: str, to_path: str, checksum=None, hashtype=None):
             sys.stdout.flush()
 
         if status != 200:
-            print(f'Removing invalid file {to_path}')
+            pvlog.logger.info('Removing invalid file %s', to_path)
             os.remove(to_path)
             raise err.DownloadError(f'There was an error downloading: {status}')
 
@@ -169,7 +170,7 @@ def download_file(url: str, to_path: str, checksum=None, hashtype=None):
     # verify checksum
     if not checksum or not hashtype:
         # pylint: disable=line-too-long
-        print('checksum and hashtype were not set, skipping verification')
+        pvlog.logger.warning('checksum and hashtype were not set, skipping verification')
         return
 
     file_checksum = fileutil.get_checksum(to_path, hashtype=hashtype)

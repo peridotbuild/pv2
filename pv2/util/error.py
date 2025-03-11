@@ -28,11 +28,15 @@ __all__ = [
         'GitPushError',
         'GitInitError',
         'GitCheckoutError',
+        'GitApplyError',
         'RpmOpenError',
         'RpmSigError',
         'RpmInfoError',
         'RpmBuildError',
         'UploadError',
+        'NotAppliedError',
+        'PatchConfigTypeError',
+        'PatchConfigValueError',
 ]
 
 
@@ -157,6 +161,12 @@ class GitCheckoutError(GenericError):
     """
     fault_code = errconst.GIT_ERR_CHECKOUT
 
+class GitApplyError(GenericError):
+    """
+    There was an issue pushing to git
+    """
+    fault_code = errconst.GIT_ERR_APPLY
+
 class RpmOpenError(GenericError):
     """
     There was an issue opening the RPM
@@ -188,3 +198,34 @@ class UploadError(GenericError):
     working.
     """
     fault_code = errconst.UPLOAD_ERR
+
+class NotAppliedError(GenericError):
+    """
+    There was an issue applying changes from a patch configuration. This class
+    processes that information.
+    """
+    fault_code = errconst.EDITOR_ERR_GENERIC
+    def __init__(self, action: str, reason: str = "Failed"):
+        self.action = action
+        self.reason = reason
+        super().__init__(f"{action} failed: {reason}")
+
+class PatchConfigValueError(ValueError):
+    """
+    There was an issue reading in the configuration.
+    """
+    fault_code = errconst.EDITOR_ERR_CONFIG_VALUE
+    def __init__(self, action: str, reason: str):
+        self.action = action
+        self.reason = reason
+        super().__init__(f"{action}: {reason}")
+
+class PatchConfigTypeError(TypeError):
+    """
+    There was an issue reading in the configuration.
+    """
+    fault_code = errconst.EDITOR_ERR_CONFIG_TYPE
+    def __init__(self, action: str, reason: str):
+        self.action = action
+        self.reason = reason
+        super().__init__(f"{action}: {reason}")

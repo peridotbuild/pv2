@@ -12,6 +12,7 @@ from pv2.util import error as err
 from pv2.util import generic
 from pv2.util import processor
 from pv2.util.constants import RpmConstants as rpmconst
+from pv2.util import log as pvlog
 
 # Address all capitalized vars
 # pylint: disable=invalid-name
@@ -31,7 +32,7 @@ try:
     HAS_RPMAUTOSPEC = True
 except ImportError:
     HAS_RPMAUTOSPEC = False
-    print('WARNING! rpmautospec was not found on this system and is not loaded.')
+    pvlog.logger.warning('WARNING! rpmautospec was not found on this system and is not loaded.')
 
 __all__ = [
         'add_rpm_key',
@@ -103,7 +104,7 @@ def get_rpm_header(file_name: str, verify_signature: bool = False):
             hdr = trans_set.hdrFromFdno(rpm_package)
         # pylint: disable=no-member
         except rpm.error as exc:
-            print(exc)
+            pvlog.logger.exception(exc)
             raise err.RpmOpenError('RPM could not be opened: Public key is not available.')
     return hdr
 
@@ -494,10 +495,10 @@ def rpmautocl(path_to_spec: str):
 
     if autochangelog_found:
         AUTOCHANGELOG = True
-        print('autochangelog found, attempting to append')
+        pvlog.logger.info('autochangelog found, attempting to append')
     if autorelease_found:
         AUTORELEASE = True
-        print('autorelease found, attempting to evaluate')
+        pvlog.logger.info('autorelease found, attempting to evaluate')
 
     if AUTOCHANGELOG or AUTORELEASE:
         try:
@@ -513,6 +514,6 @@ def rpmautocl(path_to_spec: str):
         os.remove('/tmp/temporary_name.spec')
 
     else:
-        print('No auto macros found nor processed')
+        pvlog.logger.info('No auto macros found nor processed')
 
     return True

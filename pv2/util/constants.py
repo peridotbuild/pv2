@@ -48,6 +48,15 @@ class RpmConstants:
         "efi_has_alt_arch": "0", # some arches simply don't have efi, so always 0
     }
 
+    RPM_PATCH_OBSOLETE = 0
+    RPM_PATCH_P_SPACE = 1
+    RPM_PATCH_P_NOSPACE = 2
+    RPM_PATCH_KERNEL = 3
+    RPM_PATCH_INC_FILE = 4
+    RPM_PATCH_AUTOSETUP = 5
+    RPM_SPEC_DIRECTIVE_PATCH = "Patch"
+    RPM_SPEC_DIRECTIVE_SOURCE = "Source"
+
 # pylint: disable=too-few-public-methods
 class ErrorConstants:
     """
@@ -57,6 +66,11 @@ class ErrorConstants:
     component.
 
     9100-9199: Mock errors, any error that can occur in mock.
+
+    9300-9399: Git errors, any error that happens in git
+    9400-9499: RPM errors, specifically for rpm processing
+    9500-9599: Uploader errors
+    9600-9699: Editor errors, for when patching doesn't go right
     """
     # General errors
     ERR_GENERAL = 9000
@@ -102,15 +116,22 @@ class ErrorConstants:
     GIT_ERR_PUSH = 9302
     GIT_ERR_INIT = 9303
     GIT_ERR_CHECKOUT = 9304
+    GIT_ERR_APPLY = 9305
 
     # RPM errors
     RPM_ERR_OPEN = 9400
     RPM_ERR_SIG = 9401
     RPM_ERR_INFO = 9402
     RPM_ERR_BUILD = 9403
+    RPM_ERR_SPEC_PARSE = 9404
 
     # Upload errors
     UPLOAD_ERR = 9500
+
+    # Patch errors
+    EDITOR_ERR_GENERIC = 9600
+    EDITOR_ERR_CONFIG_VALUE = 9601
+    EDITOR_ERR_CONFIG_TYPE = 9602
 
 # pylint: disable=too-few-public-methods
 class MockConstants:

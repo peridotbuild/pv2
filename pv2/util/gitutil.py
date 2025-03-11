@@ -9,15 +9,17 @@ import git as rawgit
 from git import Repo
 from git import exc as gitexc
 from pv2.util import error as err
+from pv2.util import log as pvlog
 
 __all__ = [
         'add_all',
+        'apply',
         'clone',
         'commit',
         'init',
+        'lsremote',
         'push',
-        'tag',
-        'lsremote'
+        'tag'
 ]
 
 def add_all(repo):
@@ -28,6 +30,16 @@ def add_all(repo):
         repo.git.add(all=True)
     except Exception as exc:
         raise err.GitCommitError('Unable to add files') from exc
+
+def apply(repo, patch):
+    """
+    Applies a given patch file to a repo
+    """
+    patch_command = ["git", "apply", patch]
+    try:
+        repo.git.execute(patch_command)
+    except Exception as exc:
+        raise err.GitApplyError('Unable to apply patch') from exc
 
 def checkout(repo, branch: str, orphan: bool = False):
     """
@@ -151,7 +163,7 @@ def lsremote(url):
         git_cmd.ls_remote(url)
     # pylint: disable=no-member
     except gitexc.CommandError as exc:
-        print(f'Repo does not exist or is not accessible: {exc.stderr}')
+        pvlog.logger.exception('Repo does not exist or is not accessible: %s', exc.stderr)
         return None
 
     for ref in git_cmd.ls_remote(url).split('\n'):
