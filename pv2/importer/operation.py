@@ -7,6 +7,7 @@ Importer accessories
 import os
 import re
 import shutil
+from pathlib import Path
 from pv2.util import fileutil, rpmutil, processor, generic
 from pv2.util import error as err
 from pv2.util import constants as const
@@ -14,7 +15,6 @@ from pv2.util import uploader as upload
 from pv2.util import log as pvlog
 
 __all__ = ['Import']
-# todo: add in logging and replace print with log
 
 class Import:
     """
@@ -30,10 +30,11 @@ class Import:
         """
         file_list = fileutil.filter_files_inverse(local_repo_path, lambda file: '.git' in file)
         for file in file_list:
-            if os.path.isfile(file) or os.path.islink(file):
-                os.remove(file)
-            elif os.path.isdir(file):
-                shutil.rmtree(file)
+            path = Path(file)
+            if path.is_file() or path.is_symlink():
+                path.unlink()
+            elif path.is_dir():
+                shutil.rmtree(path)
 
     @staticmethod
     def find_spec_file(local_repo_path):
@@ -196,7 +197,7 @@ class Import:
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
     @staticmethod
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def upload_to_s3(repo_path, file_dict: dict, bucket, aws_key_id: str,
                      aws_secret_key: str, overwrite: bool = False):
         """
@@ -209,22 +210,6 @@ class Import:
             upload.upload_to_s3(source_path, bucket, aws_key_id,
                                 aws_secret_key, dest_name=dest_name,
                                 overwrite=overwrite)
-
-    @staticmethod
-    def import_lookaside_peridot_cli(
-            repo_path: str,
-            repo_name: str,
-            file_dict: dict,
-    ):
-        """
-        Attempts to find and use the peridot-cli binary to upload to peridot's
-        lookaside. This assumes the environment is setup correctly with the
-        necessary variables.
-
-        Note: This is a temporary hack and will be removed in a future update.
-        """
-        for name, _ in file_dict.items():
-            source_path = f'{repo_path}/{name}'
 
     @staticmethod
     def skip_import_lookaside(repo_path: str, file_dict: dict):
