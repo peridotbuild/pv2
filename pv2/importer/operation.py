@@ -11,6 +11,7 @@ from pv2.util import fileutil, rpmutil, processor, generic
 from pv2.util import error as err
 from pv2.util import constants as const
 from pv2.util import uploader as upload
+from pv2.util import log as pvlog
 
 __all__ = ['Import']
 # todo: add in logging and replace print with log
@@ -187,10 +188,10 @@ class Import:
             source_path = f'{repo_path}/{name}'
             dest_path = f'{dest_dir}/{sha}'
             if os.path.exists(dest_path):
-                print(f'{dest_path} already exists, skipping')
+                pvlog.logger.info('%s already exists, skipping', dest_path)
                 os.remove(source_path)
             else:
-                print(f'Moving {source_path} to {dest_path}')
+                pvlog.logger.info('Moving %s to %s', source_path, dest_path)
                 shutil.move(src=source_path, dst=dest_path)
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
@@ -201,7 +202,7 @@ class Import:
         """
         Upload an object to s3
         """
-        print('Pushing sources to S3...')
+        pvlog.logger.info('Pushing sources to S3...')
         for name, sha in file_dict.items():
             source_path = f'{repo_path}/{name}'
             dest_name = sha

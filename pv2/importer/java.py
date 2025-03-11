@@ -8,6 +8,7 @@ import os
 import shutil
 from pv2.util import gitutil, fileutil
 from pv2.util import error as err
+from pv2.util import log as pvlog
 from . import Import
 
 __all__ = ['JavaPortableImport']
@@ -51,7 +52,7 @@ class JavaPortableImport(Import):
         if check_repo:
             # check for specific ref name
             ref_check = f'refs/heads/{branch}' in check_repo
-            print(f'Cloning: {self.java_name}')
+            pvlog.logger.info('Cloning: %s', self.java_name)
             if ref_check:
                 java_repo = gitutil.clone(
                         git_url_path=self.java_git_url,
@@ -69,7 +70,7 @@ class JavaPortableImport(Import):
             ref_check = f'refs/heads/{branch}' in check_repo
             # if our check is correct, clone it. if not, clone normally and
             # orphan.
-            print(f'Cloning: {self.java_name_portable}')
+            pvlog.logger.info('Cloning: %s', self.java_name_portable)
             if ref_check:
                 portable_repo = gitutil.clone(
                         git_url_path=self.__portable_git_url,
@@ -88,7 +89,7 @@ class JavaPortableImport(Import):
             for tag_name in portable_repo.tags:
                 repo_tags.append(tag_name.name)
         else:
-            print('Repo may not exist or is private. Try to import anyway.')
+            pvlog.logger.warning('Repo may not exist or is private. Try to import anyway.')
             portable_repo = gitutil.init(
                     git_url_path=self.portable_git_url,
                     repo_name=f'{self.java_name_portable}',
@@ -105,14 +106,14 @@ class JavaPortableImport(Import):
             self.perform_cleanup(['/var/tmp/java'])
             raise err.GitCommitError(f'Git tag already exists: {portable_tag}')
 
-        print('Copying metadata')
+        pvlog.logger.info('Copying metadata')
         shutil.copy2(f'{java_git_repo_path}/.{self.java_name}.metadata', f'{portable_git_repo_path}/.{self.java_name}-portable.metadata')
-        print('Copying SOURCE tree')
+        pvlog.logger.info('Copying SOURCE tree')
         shutil.rmtree(f'{portable_git_repo_path}/SOURCES')
         shutil.copytree(f'{java_git_repo_path}/SOURCES', f'{portable_git_repo_path}/SOURCES')
-        print('Copying portable spec file')
+        pvlog.logger.info('Copying portable spec file')
         shutil.copy2(f'{portable_git_repo_path}/SOURCES/{self.java_name}-portable.specfile', f'{portable_git_repo_path}/SPECS/{self.java_name}-portable.spec')
-        print(f'Committing {portable_tag}')
+        pvlog.logger.info(f'Committing {portable_tag}')
 
         # Temporary hack like with git.
         dest_gitignore_file = f'{portable_git_repo_path}/.gitignore'
@@ -128,7 +129,7 @@ class JavaPortableImport(Import):
             self.perform_cleanup(['/var/tmp/java'])
             return True
 
-        print('Nothing to push')
+        pvlog.logger.info('Nothing to push')
         self.perform_cleanup(['/var/tmp/java'])
         return False
 

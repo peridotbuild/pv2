@@ -10,6 +10,7 @@ import shutil
 import datetime
 from pv2.util import gitutil, generic
 from pv2.util import error as err
+from pv2.util import log as pvlog
 from . import Import
 
 __all__ = ['ModuleImport']
@@ -91,7 +92,7 @@ class ModuleImport(Import):
         )
         commit_msg = f'import {nsvc}'
 
-        print(f'Cloning upstream: {self.module_name}')
+        pvlog.logger.info('Cloning upstream: %s', self.module_name)
         source_repo = gitutil.clone(
                 git_url_path=self.source_git_url,
                 repo_name=self.module_name,
@@ -101,7 +102,7 @@ class ModuleImport(Import):
 
         if check_dest_repo:
             ref_check = f'refs/heads/{dest_branch}' in check_dest_repo
-            print(f'Cloning: {self.module_name}')
+            pvlog.logger.info('Cloning: %s', self.module_name)
             if ref_check:
                 dest_repo = gitutil.clone(
                         git_url_path=self.dest_git_url,
@@ -121,7 +122,7 @@ class ModuleImport(Import):
             for tag_name in dest_repo.tags:
                 repo_tags.append(tag_name.name)
         else:
-            print('Repo may not exist or is private. Try to import anyway.')
+            pvlog.logger.warning('Repo may not exist or is private. Try to import anyway.')
             dest_repo = gitutil.init(
                     git_url_path=self.dest_git_url,
                     repo_name=self.module_name,
@@ -179,7 +180,7 @@ class ModuleImport(Import):
             gitutil.push(dest_repo, ref=ref)
             self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
             return True
-        print('Nothing to push')
+        pvlog.logger.info('Nothing to push')
         self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
         return False
 

@@ -45,7 +45,8 @@ def upload_to_s3(
         bucket,
         access_key_id = None,
         access_key = None,
-        dest_name = None
+        dest_name = None,
+        overwrite = False
     ):
     """
     Uploads an artifact to s3.

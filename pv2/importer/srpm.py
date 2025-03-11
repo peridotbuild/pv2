@@ -8,6 +8,7 @@ import os
 import re
 from pv2.util import gitutil, fileutil, generic
 from pv2.util import error as err
+from pv2.util import log as pvlog
 from . import Import
 
 __all__ = ['SrpmImport']
@@ -78,7 +79,9 @@ class SrpmImport(Import):
         self.__branch = branch
         if len(branch) == 0:
             self.__branch = f'c{release}'
-            print(f'Warning: Branch name not specified, defaulting to {self.__branch}')
+            pvlog.logger.warning(
+                    'Warning: Branch name not specified, defaulting to %s', self.__branch
+            )
 
         self.__aws_access_key_id = aws_access_key_id
         self.__aws_access_key = aws_access_key
@@ -124,7 +127,7 @@ class SrpmImport(Import):
             ref_check = f'refs/heads/{branch}' in check_repo
             # if our check is correct, clone it. if not, clone normally and
             # orphan.
-            print(f'Cloning: {self.rpm_name}')
+            pvlog.logger.info('Cloning: %s', self.rpm_name)
             if ref_check:
                 repo = gitutil.clone(
                         git_url_path=self.git_url,
@@ -143,7 +146,7 @@ class SrpmImport(Import):
             for tag_name in repo.tags:
                 repo_tags.append(tag_name.name)
         else:
-            print('Repo may not exist or is private. Try to import anyway.')
+            pvlog.logger.warning('Repo may not exist or is private. Try to import anyway.')
             repo = gitutil.init(
                     git_url_path=self.git_url,
                     repo_name=self.rpm_name_replace,
@@ -168,7 +171,7 @@ class SrpmImport(Import):
         if s3_upload:
             # I don't want to blatantly blow up here yet.
             if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
-                print('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
+                pvlog.logger.warning('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
             else:
                 self.upload_to_s3(
                         git_repo_path,
@@ -201,7 +204,7 @@ class SrpmImport(Import):
 
         # The most recent commit is assumed to be tagged also. We will not
         # push. Force the importer to tag manually.
-        print('Nothing to push')
+        pvlog.logger.info('Nothing to push')
         self.perform_cleanup([git_repo_path])
         return False
 

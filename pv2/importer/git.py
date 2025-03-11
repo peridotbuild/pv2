@@ -8,6 +8,7 @@ import os
 import string
 from pv2.util import gitutil, rpmutil, generic
 from pv2.util import error as err
+from pv2.util import log as pvlog
 from . import Import
 
 __all__ = ['GitImport']
@@ -131,7 +132,7 @@ class GitImport(Import):
         # Do SCL logic here.
 
         # Try to clone first
-        print(f'Cloning upstream: {self.rpm_name}')
+        pvlog.logger.info('Cloning upstream: %s', self.rpm_name)
         source_repo = gitutil.clone(
                 git_url_path=self.source_git_url,
                 repo_name=self.rpm_name_replace,
@@ -141,7 +142,7 @@ class GitImport(Import):
 
         if check_dest_repo:
             ref_check = f'refs/heads/{dest_branch}' in check_dest_repo
-            print(f'Cloning: {self.rpm_name}')
+            pvlog.logger.info('Cloning: %s', self.rpm_name)
             if ref_check:
                 dest_repo = gitutil.clone(
                         git_url_path=self.dest_git_url,
@@ -161,7 +162,7 @@ class GitImport(Import):
             for tag_name in dest_repo.tags:
                 repo_tags.append(tag_name.name)
         else:
-            print('Repo may not exist or is private. Try to import anyway.')
+            pvlog.logger.warning('Repo may not exist or is private... Try to import anyway.')
             dest_repo = gitutil.init(
                     git_url_path=self.dest_git_url,
                     repo_name=self.rpm_name_replace,
@@ -188,13 +189,12 @@ class GitImport(Import):
         else:
             #raise err.GenericError('sources or metadata file NOT found')
             # There isn't a reason to make a blank file right now.
-            print('WARNING: There was no sources or metadata found.')
+            pvlog.logger.warning('WARNING: There was no sources or metadata found.')
             with open(metadata_file, 'w+') as metadata_handle:
                 pass
 
         if not metafile_to_use:
-            #print('Source: There was no metadata file found. Skipping import attempt.')
-            print('Source: There was no metadata file found. Import may not work correctly.')
+            pvlog.logger.warning('Source: There was no metadata file found. Import may not work correctly.')
             #metafile_to_use = ''
             #self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
             #return False
@@ -231,7 +231,7 @@ class GitImport(Import):
         # do rpm autochangelog logic here
         autospec_return = rpmutil.rpmautocl(source_git_repo_spec)
         if not autospec_return:
-            print('WARNING! rpmautospec was not found on this system. autospec logic is ignored.')
+            pvlog.logger.warning('WARNING! rpmautospec was not found on this system. autospec logic is ignored.')
 
         # attempt to pack up the RPM, get metadata
         packed_srpm = self.pack_srpm(source_git_repo_path,
@@ -261,7 +261,7 @@ class GitImport(Import):
         if s3_upload:
             # I don't want to blatantly blow up here yet.
             if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
-                print('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
+                pvlog.logger.warning('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
             else:
                 self.upload_to_s3(
                         dest_git_repo_path,
@@ -292,9 +292,9 @@ class GitImport(Import):
             ref = gitutil.tag(dest_repo, import_tag, commit_msg)
             gitutil.push(dest_repo, ref=ref)
             self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
-            print(f'Imported: {import_tag}')
+            pvlog.logger.info('Imported: %s', import_tag)
             return True
-        print('Nothing to push')
+        pvlog.logger.info('Nothing to push')
         self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
         return False
 
