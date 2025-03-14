@@ -371,8 +371,14 @@ class GitImport(Import):
         """
         Returns the dist tag
         """
-        conv_tag = '%{!?distprefix0:%{?distprefix}}%{expand:%{lua:for i=0,9999 do print("%{?distprefix" .. i .."}") end}}' + self.__dist_tag + '%{?with_bootstrap:~bootstrap}'
-        return conv_tag
+        return self.__dist_tag
+
+    @property
+    def dist_prefix(self):
+        """
+        Returns the dist_prefix, which is normally "el"
+        """
+        return self.__dist_prefix
 
     @property
     def upstream_lookaside(self):
