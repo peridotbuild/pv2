@@ -22,12 +22,8 @@ def filter_files(directory_path: str, filter_filename: str) -> list:
     """
     Filter out specified files
     """
-    return_list = []
     directory = Path(directory_path)
-    for file in directory.iterdir():
-        if filter_filename(file.name):
-            return_list.append(str(file))
-
+    return_list = [str(file) for file in directory.rglob(filter_filename)]
     return return_list
 
 def filter_files_inverse(directory_path: str, filter_filename: str) -> list:
@@ -36,6 +32,8 @@ def filter_files_inverse(directory_path: str, filter_filename: str) -> list:
     """
     return_list = []
     directory = Path(directory_path)
+    # This is a carry over from previous os module use.
+    # I don't think there's a way to inverse rglob.
     for file in directory.iterdir():
         if not filter_filename(file.name):
             return_list.append(str(file))

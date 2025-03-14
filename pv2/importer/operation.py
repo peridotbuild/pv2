@@ -45,7 +45,8 @@ class Import:
         """
         file_list = fileutil.filter_files(
                 local_repo_path,
-                lambda file: file.endswith('.spec'))
+                '*.spec'
+        )
 
         if len(file_list) > 1:
             raise err.ConfigurationError('This repo has more than one spec file.')
@@ -309,3 +310,9 @@ class Import:
             micro_version = f'0{regex_search.group(3)}'
 
         return f'{release}{minor_version}{micro_version}{timestamp}'
+
+    def pkg_import(self, skip_lookaside: bool = False, s3_upload: bool = False):
+        """
+        This function is used elsewhere
+        """
+        raise NotImplementedError("Imports can only be performed in subclasses")

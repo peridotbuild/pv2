@@ -371,7 +371,8 @@ class GitImport(Import):
         """
         Returns the dist tag
         """
-        return self.__dist_tag
+        conv_tag = '%{!?distprefix0:%{?distprefix}}%{expand:%{lua:for i=0,9999 do print("%{?distprefix" .. i .."}") end}}' + self.__dist_tag + '%{?with_bootstrap:~bootstrap}'
+        return conv_tag
 
     @property
     def upstream_lookaside(self):
