@@ -5,6 +5,7 @@ Git Utilities and Accessories
 """
 
 import os
+import pathlib
 import git as rawgit
 from git import Repo
 from git import exc as gitexc
@@ -18,6 +19,7 @@ __all__ = [
         'commit',
         'init',
         'lsremote',
+        'obj',
         'push',
         'tag'
 ]
@@ -35,7 +37,10 @@ def apply(repo, patch):
     """
     Applies a given patch file to a repo
     """
-    patch_command = ["git", "apply", patch]
+    actpatch = patch
+    if isinstance(patch, pathlib.PosixPath):
+        actpatch = patch.as_posix()
+    patch_command = ["git", "apply", actpatch]
     try:
         repo.git.execute(patch_command)
     except Exception as exc:
@@ -123,6 +128,16 @@ def init(
 
     return repo
 
+def obj(git_url_path: str):
+    """
+    Gets a repo object based on the path name
+    """
+    path_way = git_url_path
+    if not os.path.exists(path_way):
+        raise err.GenericError('Path does not exist, are you sure this is a git repo?')
+
+    repo = Repo(path_way)
+    return repo
 
 def push(repo, ref=None, force=False):
     """

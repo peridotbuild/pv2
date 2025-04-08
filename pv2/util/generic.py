@@ -6,7 +6,7 @@ import sys
 import datetime
 import hashlib
 # I want to at some point look into pathlib
-# from pathlib import Path
+from pathlib import Path
 from urllib.parse import quote as urlquote
 import pycurl
 from pv2.util import error as err
@@ -178,11 +178,16 @@ def download_file(url: str, to_path: str, checksum=None, hashtype=None):
         os.remove(to_path)
         raise err.DownloadError('Checksums do not match for downloaded file')
 
-def read_file_to_list(file_path: str) -> list[str]:
+def read_file_to_list(file_path) -> list[str]:
     """
     Reads a file into a list
     """
-    with open(file_path, "r") as file_to_read:
+    if isinstance(file_path, (str, bytes, Path)):
+        confirmed_path = Path(file_path)
+    else:
+        confirmed_path = file_path
+
+    with open(confirmed_path, "r") as file_to_read:
         file_data = [line.rstrip("\n") for line in file_to_read.readlines()]
         file_to_read.close()
 
@@ -191,12 +196,18 @@ def read_file_to_list(file_path: str) -> list[str]:
 
     return file_data
 
-def write_file_from_list(file_path: str, data: list[str]):
+def write_file_from_list(file_path, data: list[str]):
     """
     Takes a list of strings and writes them to a file
     """
-    with open(file_path, "w+") as file_data:
+    if isinstance(file_path, (str, bytes, Path)):
+        confirmed_path = Path(file_path)
+    else:
+        confirmed_path = file_path
+
+    with open(confirmed_path, "w+") as file_data:
         file_data.writelines(f"{line}\n" for line in data)
+        file_data.close()
 
 def line_is_comment(line: str) -> bool:
     """
@@ -205,5 +216,3 @@ def line_is_comment(line: str) -> bool:
     Potentially move this to generic
     """
     return line.startswith("#")
-
-

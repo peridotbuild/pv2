@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import stat
+from pathlib import Path
 import lxml.etree
 from pv2.util import error as err
 from pv2.util import generic
@@ -47,12 +48,15 @@ __all__ = [
         'is_rpm',
         'split_rpm_by_header',
         'verify_rpm_signature',
+        'spec_parse',
+        'spec_evr',
         'spec_autosetup',
         'spec_autochangelog',
         'spec_autorelease',
         'spec_line_changelog',
         'spec_line_version',
         'spec_line_release',
+        'spec_line_epoch',
         'rpmautocl'
 ]
 
@@ -432,6 +436,54 @@ def add_rpm_key(file_name: str):
     except rpm.error as exc:
         raise err.RpmSigError(f'Unable to import signature: {exc}')
 
+# The spec file will be parsed by the rpm module
+def spec_parse(spec_file_path, dist: str = "%{nil}") -> list[str]:
+    """
+    Parses the spec file given to it. Equivalent to rpmspec. A dist tag can be
+    optionally defined, which will alter the result of the "Release" directive
+    in the spec file in most (if not all) packages.
+
+    Equivalent rpmspec command:
+        % rpmspec -q --parse <spec> \
+                --define "dist <value or %{nil}>" \
+                --define "__python3 /usr/bin/python3" \
+                --define "forgemeta %{nil}" \
+                --define "gometa %{nil}" \
+                --define "ldconfig_scriptlets(n:) %{nil}" \
+                --define "pesign %{nil}" \
+                --define "efi_has_alt_arch 0"
+    """
+    try:
+        spec_path = Path(spec_file_path)
+        source_path = spec_path.parent
+        # pylint: disable=no-member
+        rpm.addMacro("dist", dist)
+        rpm.addMacro("_topdir", source_path)
+        for m in rpmconst.RPMSPEC_DEFINITIONS.items():
+            rpm.addMacro(m[0], m[1])
+
+        s = rpm.spec(str(spec_path))
+        return s.parsed.splitlines()
+
+    # pylint: disable=no-member
+    except rpm.error as exc:
+        raise err.RpmParseError(f"Failed to parse spec file: {exc}")
+
+def spec_evr(spec_file_data: list[str]) -> tuple[str, ...]:
+    """
+    Provides EVR information from parsed spec data. Used for changelogs.
+    """
+    epoch, version, release = None, None, None
+    for i, line in enumerate(spec_file_data):
+        if epoch is None and line.startswith("Epoch:"):
+            epoch = line.rstrip().split()[-1]
+        if version is None and line.startswith("Version:"):
+            version = line.rstrip().split()[-1]
+        if release is None and line.startswith("Release:"):
+            release = spec_file_data[i].rstrip().split()[-1]
+
+    return epoch, version, release
+
 # The spec file will be brought in as a list and read as such
 def spec_autosetup(rpm_spec: list[str]) -> bool:
     """
@@ -478,6 +530,12 @@ def spec_line_release(line: str) -> bool:
     Determines if this line is the Release: directive
     """
     return line.startswith("Release:")
+
+def spec_line_epoch(line: str) -> bool:
+    """
+    Determines if this line is the Epoch: directive
+    """
+    return line.startswith("Epoch:")
 
 def rpmautocl(path_to_spec: str):
     """

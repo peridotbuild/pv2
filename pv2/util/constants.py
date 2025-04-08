@@ -3,6 +3,8 @@
 """
 All constants
 """
+from enum import Enum
+
 __all__ = [
         'RpmConstants',
         'ErrorConstants',
@@ -48,14 +50,32 @@ class RpmConstants:
         "efi_has_alt_arch": "0", # some arches simply don't have efi, so always 0
     }
 
-    RPM_PATCH_OBSOLETE = 0
-    RPM_PATCH_P_SPACE = 1
-    RPM_PATCH_P_NOSPACE = 2
-    RPM_PATCH_KERNEL = 3
-    RPM_PATCH_INC_FILE = 4
-    RPM_PATCH_AUTOSETUP = 5
-    RPM_SPEC_DIRECTIVE_PATCH = "Patch"
-    RPM_SPEC_DIRECTIVE_SOURCE = "Source"
+#   RPM_PATCH_OBSOLETE = 0
+#   RPM_PATCH_P_SPACE = 1
+#   RPM_PATCH_P_NOSPACE = 2
+#   RPM_PATCH_KERNEL = 3
+#   RPM_PATCH_INC_FILE = 4
+#   RPM_PATCH_AUTOSETUP = 5
+#   RPM_SPEC_DIRECTIVE_PATCH = "Patch"
+#   RPM_SPEC_DIRECTIVE_SOURCE = "Source"
+
+    class RpmSpecPatchTypes(Enum):
+        """
+        Patch types
+        """
+        OBSOLETE = 0
+        P_SPACE = 1
+        P_NOSPACE = 2
+        KERNEL = 3
+        INC_FILE = 4
+        AUTOSETUP = 5
+
+    class RpmSpecDirectives(Enum):
+        """
+        Directives
+        """
+        PATCH = "Patch"
+        SOURCE = "Source"
 
 # pylint: disable=too-few-public-methods
 class ErrorConstants:
@@ -132,6 +152,7 @@ class ErrorConstants:
     EDITOR_ERR_GENERIC = 9600
     EDITOR_ERR_CONFIG_VALUE = 9601
     EDITOR_ERR_CONFIG_TYPE = 9602
+    EDITOR_ERR_CONFIG_MANY_FILES = 9603
 
 # pylint: disable=too-few-public-methods
 class MockConstants:

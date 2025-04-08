@@ -33,10 +33,12 @@ __all__ = [
         'RpmSigError',
         'RpmInfoError',
         'RpmBuildError',
+        'RpmParseError',
         'UploadError',
         'NotAppliedError',
         'PatchConfigTypeError',
         'PatchConfigValueError',
+        'TooManyFilesError',
 ]
 
 
@@ -192,6 +194,12 @@ class RpmBuildError(GenericError):
     """
     fault_code = errconst.RPM_ERR_BUILD
 
+class RpmParseError(GenericError):
+    """
+    There was an issue parsing RPM data.
+    """
+    fault_code = errconst.RPM_ERR_SPEC_PARSE
+
 class UploadError(GenericError):
     """
     There was an issue for uploading an artifact or the uploader is not
@@ -225,6 +233,16 @@ class PatchConfigTypeError(TypeError):
     There was an issue reading in the configuration.
     """
     fault_code = errconst.EDITOR_ERR_CONFIG_TYPE
+    def __init__(self, action: str, reason: str):
+        self.action = action
+        self.reason = reason
+        super().__init__(f"{action}: {reason}")
+
+class TooManyFilesError(TypeError):
+    """
+    There was an issue reading in the configuration.
+    """
+    fault_code = errconst.EDITOR_ERR_CONFIG_MANY_FILES
     def __init__(self, action: str, reason: str):
         self.action = action
         self.reason = reason
