@@ -125,6 +125,9 @@ class GitImport(Import):
         # dest_branch to be: {dest_branch}-stream-{stream_name}
         if "stream" in source_branch:
             _stream_name = self.get_module_stream_name(source_branch)
+            # this is to get around "rhel-next" cases
+            if _stream_name == "next":
+                _stream_name = f"rhel{release_ver}"
             dest_branch = f'{dest_branch}-stream-{_stream_name}'
             distmarker = self.dist_tag.lstrip('.')
             _dist_tag = f'.module+{distmarker}+1010+deadbeef'

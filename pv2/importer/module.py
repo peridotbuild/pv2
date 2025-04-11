@@ -62,7 +62,11 @@ class ModuleImport(Import):
         if "stream" not in self.__branch:
             raise err.ConfigurationError('Source branch does not contain stream')
 
-        self.__stream_name = self.get_module_stream_name(branch)
+        _module_stream_name = self.get_module_stream_name(branch)
+        # gets around "rhel-next"
+        if _module_stream_name == "next":
+            _module_stream_name = f"rhel{release}"
+        self.__stream_name = _module_stream_name
 
     def module_import(self):
         """
