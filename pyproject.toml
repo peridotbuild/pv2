@@ -32,7 +32,7 @@ file = "LICENSE"
 [tool.setuptools]
 package-dir = { "pv2" = "pv2" }
 
-[tool.poetry.scripts]
+[project.scripts]
 import_pkg = "pv2.scripts.import_pkg:run"
 import_module = "pv2.scripts.import_module:run"
 import_java = "pv2.scripts.import_java:run"

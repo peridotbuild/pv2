@@ -15,7 +15,8 @@ except ImportError:
 
 __all__ = [
         'S3ProgressPercentage',
-        'upload_to_s3'
+        'upload_to_s3',
+        'upload_to_local'
 ]
 
 class S3ProgressPercentage:
@@ -74,3 +75,12 @@ def upload_to_s3(
 
     # Hacky way to get a new line
     sys.stdout.write('\n')
+
+def upload_to_local(
+        input_file,
+        upload_path,
+        overwrite = False
+    ):
+    """
+    local 'upload'
+    """
