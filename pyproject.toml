@@ -1,6 +1,6 @@
 [project]
 name = "pv2"
-version = "0.14.0"
+version = "0.14.1"
 description = "PV2 backend framework module"
 readme = "README.md"
 authors = [
@@ -19,15 +19,30 @@ dependencies = [
   "file-magic >= 0.4.0",
   "pycurl >= 7.43.0.6",
   "boto3 >= 1.22.10",
-  "pulpcore-client >= 3.58.0"
+  "rpmautospec >= 0.7.0",
+]
+
+license-files = [
+  "LICENSE",
+]
+
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/peridotbuild/pv2"
 "Bug Tracker" = "https://github.com/peridotbuild/pv2/issues"
-
-[project.license]
-file = "LICENSE"
 
 [tool.setuptools]
 package-dir = { "pv2" = "pv2" }
@@ -36,5 +51,7 @@ package-dir = { "pv2" = "pv2" }
 import_pkg = "pv2.scripts.import_pkg:run"
 import_module = "pv2.scripts.import_module:run"
 import_java = "pv2.scripts.import_java:run"
-#pkg_info = "pv2.scripts.pkg_info:run"
-#build_pkg = "pv2.scripts.build_pkg:run"
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
