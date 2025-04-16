@@ -46,9 +46,11 @@ class GitImport(Import):
             source_git_user: str = 'git',
             dest_git_user: str = 'git',
             dest_org: str = 'rpms',
-            aws_access_key_id: str = '',
-            aws_access_key: str = '',
-            aws_bucket: str = ''
+            aws_access_key_id=None,
+            aws_access_key=None,
+            aws_bucket=None,
+            aws_region=None,
+            aws_use_ssl: bool = False
     ):
         """
         Init the class.
@@ -81,6 +83,8 @@ class GitImport(Import):
         self.__aws_access_key_id = aws_access_key_id
         self.__aws_access_key = aws_access_key
         self.__aws_bucket = aws_bucket
+        self.__aws_region = aws_region
+        self.__aws_use_ssl = aws_use_ssl
 
         if len(distcustom) > 0:
             self.__dist_tag = f'.{distcustom}'
@@ -261,24 +265,31 @@ class GitImport(Import):
         self.generate_metadata(dest_git_repo_path, self.rpm_name, sources)
         self.generate_filesum(dest_git_repo_path, self.rpm_name, "Direct Git Import")
 
-        if s3_upload:
-            # I don't want to blatantly blow up here yet.
-            if len(self.__aws_access_key_id) == 0 or len(self.__aws_access_key) == 0 or len(self.__aws_bucket) == 0:
-                pvlog.logger.warning('WARNING: No access key, ID, or bucket was provided. Skipping upload.')
+        if not skip_lookaside:
+            if s3_upload:
+                # I don't want to blatantly blow up here yet.
+                if not self.__aws_region or not self.__aws_access_key_id or not self.__aws_access_key:
+                    pvlog.logger.warning('WARNING: Access key, ID, nor region were provided. We will try to guess these values.')
+                if not self.__aws_bucket:
+                    pvlog.logger.warning('WARNING: No bucket was provided. Skipping upload.')
+                else:
+                    self.upload_to_s3(
+                            dest_git_repo_path,
+                            sources,
+                            self.__aws_bucket,
+                            self.__aws_access_key_id,
+                            self.__aws_access_key,
+                            self.__aws_use_ssl,
+                            self.__aws_region,
+                    )
+                # this is a quick cleanup op, will likely change the name
+                # later.
+                self.skip_local_import_lookaside(dest_git_repo_path, sources)
             else:
-                self.upload_to_s3(
-                        dest_git_repo_path,
-                        sources,
-                        self.__aws_bucket,
-                        self.__aws_access_key_id,
-                        self.__aws_access_key,
-                )
-
-        if skip_lookaside:
-            self.skip_import_lookaside(dest_git_repo_path, sources)
+                self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
+                                      sources, self.dest_lookaside)
         else:
-            self.import_lookaside(dest_git_repo_path, self.rpm_name, dest_branch,
-                                  sources, self.dest_lookaside)
+            self.skip_local_import_lookaside(dest_git_repo_path, sources)
 
         # This is a temporary hack. There are cases that the .gitignore that's
         # provided by upstream errorneouly keeps out certain sources, despite

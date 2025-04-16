@@ -27,9 +27,11 @@ rpm_parser.add_argument('--skip-lookaside-upload',
                         action='store_true',
                         help='Set this flag to skip uploading to /var/www/html/sources esque lookaside')
 rpm_parser.add_argument('--upload-to-s3', action='store_true')
-rpm_parser.add_argument('--aws-access-key-id', type=str, required=False, default='')
-rpm_parser.add_argument('--aws-access-key', type=str, required=False, default='')
-rpm_parser.add_argument('--aws-bucket', type=str, required=False, default='')
+rpm_parser.add_argument('--aws-access-key-id', type=str, required=False, default=None)
+rpm_parser.add_argument('--aws-access-key', type=str, required=False, default=None)
+rpm_parser.add_argument('--aws-bucket', type=str, required=False, default=None)
+rpm_parser.add_argument('--aws-use-ssl', type=str, required=False, default=False)
+rpm_parser.add_argument('--aws-region', type=str, required=False, default=None)
 
 git_parser.add_argument('--name', type=str, required=True)
 git_parser.add_argument('--source-gituser', type=str, required=False, default='git')
@@ -56,9 +58,11 @@ git_parser.add_argument('--skip-lookaside-upload',
                         action='store_true',
                         help='Set this flag to skip uploading to /var/www/html/sources esque lookaside')
 git_parser.add_argument('--upload-to-s3', action='store_true')
-git_parser.add_argument('--aws-access-key-id', type=str, required=False, default='')
-git_parser.add_argument('--aws-access-key', type=str, required=False, default='')
-git_parser.add_argument('--aws-bucket', type=str, required=False, default='')
+git_parser.add_argument('--aws-access-key-id', type=str, required=False, default=None)
+git_parser.add_argument('--aws-access-key', type=str, required=False, default=None)
+git_parser.add_argument('--aws-bucket', type=str, required=False, default=None)
+git_parser.add_argument('--aws-use-ssl', type=str, required=False, default=False)
+git_parser.add_argument('--aws-region', type=str, required=False, default=None)
 
 results = parser.parse_args()
 command = parser.parse_args().cmd
@@ -83,6 +87,8 @@ def main():
                 aws_access_key_id=results.aws_access_key_id,
                 aws_access_key=results.aws_access_key,
                 aws_bucket=results.aws_bucket,
+                aws_region=results.aws_region,
+                aws_use_ssl=results.aws_use_ssl,
         )
         classy.pkg_import(skip_lookaside=results.skip_lookaside_upload,
                           s3_upload=results.upload_to_s3)
@@ -107,6 +113,8 @@ def main():
                 aws_access_key_id=results.aws_access_key_id,
                 aws_access_key=results.aws_access_key,
                 aws_bucket=results.aws_bucket,
+                aws_region=results.aws_region,
+                aws_use_ssl=results.aws_use_ssl,
         )
         classy.pkg_import(skip_lookaside=results.skip_lookaside_upload,
                           s3_upload=results.upload_to_s3)

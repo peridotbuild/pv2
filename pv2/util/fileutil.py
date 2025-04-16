@@ -15,7 +15,8 @@ __all__ = [
         'get_checksum',
         'get_magic_file',
         'get_magic_content',
-        'mkdir'
+        'mkdir',
+        'file_exists_local'
 ]
 
 def filter_files(directory_path: str, filter_filename: str) -> list:
@@ -89,11 +90,19 @@ def mkdir(file_path: str):
     """
     Creates a new directory
     """
-    #if os.path.exists(file_path):
-    #    raise err.GenericError('Path already exists')
     try:
         os.mkdir(file_path)
     except FileExistsError as exc:
         raise err.GenericError('Path already exists') from exc
     except Exception as exc:
         raise err.GenericError(f'There was another error: {exc}') from exc
+
+def file_exists_local(file_path) -> bool:
+    """
+    Checks if a file exists
+    """
+    confirmed_path = file_path
+    if not isinstance(file_path, Path):
+        confirmed_path = Path(file_path)
+
+    return confirmed_path.exists()

@@ -3,12 +3,19 @@
 """
 Utility functions for uploading artifacts
 """
+
+# pylint: disable=missing-function-docstring
+# pylint: disable=too-many-positional-arguments,too-many-arguments
+# pylint: disable=too-few-public-methods
+# pylint: disable=invalid-name
+
 import os
 import sys
 import threading
 import pv2.util.error as err
 try:
     import boto3
+    import botocore
     s3 = boto3.client('s3')
 except ImportError:
     s3 = None
@@ -16,6 +23,7 @@ except ImportError:
 __all__ = [
         'S3ProgressPercentage',
         'upload_to_s3',
+        'file_exists_s3',
         'upload_to_local'
 ]
 
@@ -41,13 +49,40 @@ class S3ProgressPercentage:
             )
             sys.stdout.flush()
 
+def file_exists_s3(
+        bucket: str,
+        key: str,
+        access_key_id = None,
+        access_key = None,
+        use_ssl = False,
+        region = None
+    ) -> bool:
+    config = botocore.client.Config(s3={'addressing_style': 'path'})
+    s3_client = boto3.client(
+            's3',
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=access_key,
+            use_ssl=use_ssl,
+            region_name=region,
+            config=config
+    )
+    try:
+        s3_client.head_object(Bucket=bucket, Key=key)
+        return True
+    except botocore.exceptions.ClientError as exc:
+        code = str(exc.response['Error']['Code'])
+        if code == '404':
+            return False
+        raise err.UploadError('Unexpected error from s3: {code}')
+
 def upload_to_s3(
         input_file,
         bucket,
         access_key_id = None,
         access_key = None,
-        dest_name = None,
-        overwrite = False
+        use_ssl = False,
+        region = None,
+        dest_name = None
     ):
     """
     Uploads an artifact to s3.
@@ -58,10 +93,15 @@ def upload_to_s3(
     if s3 is None:
         raise err.UploadError('s3 module is not available')
 
+    config = botocore.client.Config(s3={'addressing_style': 'path'})
+
     s3_client = boto3.client(
             's3',
             aws_access_key_id=access_key_id,
-            aws_secret_access_key=access_key
+            aws_secret_access_key=access_key,
+            use_ssl=use_ssl,
+            region_name=region,
+            config=config
     )
 
     with open(input_file, 'rb') as inner:
@@ -78,8 +118,7 @@ def upload_to_s3(
 
 def upload_to_local(
         input_file,
-        upload_path,
-        overwrite = False
+        upload_path
     ):
     """
     local 'upload'

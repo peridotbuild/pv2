@@ -199,8 +199,11 @@ class Import:
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
     @staticmethod
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def upload_to_s3(repo_path, file_dict: dict, bucket, aws_key_id: str,
-                     aws_secret_key: str, overwrite: bool = False):
+    def upload_to_s3(
+            repo_path,
+            file_dict: dict,
+            bucket, aws_key_id: str, aws_secret_key: str, use_ssl = bool, region = str,
+            overwrite: bool = False):
         """
         Upload an object to s3
         """
@@ -208,12 +211,25 @@ class Import:
         for name, sha in file_dict.items():
             source_path = f'{repo_path}/{name}'
             dest_name = sha
-            upload.upload_to_s3(source_path, bucket, aws_key_id,
-                                aws_secret_key, dest_name=dest_name,
-                                overwrite=overwrite)
+            exists = upload.file_exists_s3(bucket, dest_name, aws_key_id,
+                                           aws_secret_key, use_ssl, region)
+
+            if exists:
+                pvlog.logger.warning('File %s already exists in the bucket.',
+                                     dest_name)
+                if overwrite:
+                    pvlog.logger.warning('Overwriting the file %s...', dest_name)
+                    upload.upload_to_s3(source_path, bucket, aws_key_id,
+                                        aws_secret_key, use_ssl, region, dest_name=dest_name)
+                else:
+                    pvlog.logger.warning('Skipping upload of %s', dest_name)
+            else:
+                pvlog.logger.warning('Uploading %s...', dest_name)
+                upload.upload_to_s3(source_path, bucket, aws_key_id,
+                                    aws_secret_key, use_ssl, region, dest_name=dest_name)
 
     @staticmethod
-    def skip_import_lookaside(repo_path: str, file_dict: dict):
+    def skip_local_import_lookaside(repo_path: str, file_dict: dict):
         """
         Removes all files that are supposed to go to the lookaside. This is for
         cases where you may have sources in another location, you just want the
