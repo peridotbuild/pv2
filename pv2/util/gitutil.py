@@ -68,7 +68,8 @@ def clone(
         git_url_path: str,
         repo_name: str,
         to_path: str = None,
-        branch: str = None
+        branch: str = None,
+        single_branch: bool = False
 ):
     """
     clone a repo. if branch is None, it will just clone the repo in general and
@@ -82,7 +83,8 @@ def clone(
         repo = Repo.clone_from(
                 url=git_url_path,
                 to_path=clone_path,
-                branch=branch
+                branch=branch,
+                single_branch=single_branch
         )
     # pylint: disable=no-member
     except gitexc.CommandError as exc:

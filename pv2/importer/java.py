@@ -58,7 +58,8 @@ class JavaPortableImport(Import):
                         git_url_path=self.java_git_url,
                         repo_name=self.java_name,
                         to_path=java_git_repo_path,
-                        branch=branch
+                        branch=branch,
+                        single_branch=True
                 )
             else:
                 raise err.GitCommitError('Invalid branch or information in general')
@@ -76,7 +77,8 @@ class JavaPortableImport(Import):
                         git_url_path=self.__portable_git_url,
                         repo_name=f'{self.java_name_portable}',
                         to_path=portable_git_repo_path,
-                        branch=branch
+                        branch=branch,
+                        single_branch=True
                 )
             else:
                 portable_repo = gitutil.clone(

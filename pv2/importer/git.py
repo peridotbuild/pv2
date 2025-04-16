@@ -144,7 +144,8 @@ class GitImport(Import):
                 git_url_path=self.source_git_url,
                 repo_name=self.rpm_name_replace,
                 to_path=source_git_repo_path,
-                branch=source_branch
+                branch=source_branch,
+                single_branch=True
         )
 
         if check_dest_repo:
@@ -155,7 +156,8 @@ class GitImport(Import):
                         git_url_path=self.dest_git_url,
                         repo_name=self.rpm_name_replace,
                         to_path=dest_git_repo_path,
-                        branch=dest_branch
+                        branch=dest_branch,
+                        single_branch=True
                 )
             else:
                 dest_repo = gitutil.clone(

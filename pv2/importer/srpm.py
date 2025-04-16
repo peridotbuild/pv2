@@ -136,7 +136,8 @@ class SrpmImport(Import):
                 repo = gitutil.clone(
                         git_url_path=self.git_url,
                         repo_name=self.rpm_name_replace,
-                        branch=branch
+                        branch=branch,
+                        single_branch=True
                 )
             else:
                 repo = gitutil.clone(
