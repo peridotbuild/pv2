@@ -16,6 +16,9 @@ from pv2.util import log as pvlog
 
 __all__ = ['Import']
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=line-too-long
+
 class Import:
     """
     Import an SRPM
@@ -198,7 +201,6 @@ class Import:
                 if os.path.exists('/usr/sbin/restorecon'):
                     processor.run_proc_foreground_shell(f'/usr/sbin/restorecon {dest_path}')
     @staticmethod
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def upload_to_s3(
             repo_path,
             file_dict: dict,
@@ -262,7 +264,6 @@ class Import:
         Attempts to loop through the metadata file
         """
         file_dict = {}
-        # pylint: disable=line-too-long
         line_pattern = re.compile(r'^(?P<hashtype>[^ ]+?) \((?P<file>[^ )]+?)\) = (?P<checksum>[^ ]+?)$')
         classic_pattern = re.compile(r'^(?P<checksum>[^ ]+?)\s+(?P<file>[^ ]+?)$')
         with open(metadata_file, encoding='UTF-8') as metafile:
@@ -285,6 +286,17 @@ class Import:
                     }
 
         return file_dict
+
+    @staticmethod
+    def parse_git_tag(git_tag):
+        """
+        Parses a git tag and returns a tuple
+        """
+        pattern = re.compile(r'^(?P<import>imports\/\w+\/)?(?P<name>\w+)-(?P<version>[\w~%.+]+)-(?P<release>\w+)(?P<dist>\.\w+)')
+        check = pattern.match(git_tag)
+        if not check:
+            return None
+        return check.groups()
 
     @staticmethod
     def perform_cleanup(list_of_dirs: list):

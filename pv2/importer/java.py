@@ -22,7 +22,7 @@ class JavaPortableImport(Import):
     def __init__(
             self,
             pkg_name: str,
-            git_url_path: str,
+            git_host: str,
             branch: str,
             git_user: str = 'git',
             org: str = 'rpms',
@@ -31,8 +31,8 @@ class JavaPortableImport(Import):
         Init the class.
         """
         java_package_name = pkg_name
-        java_git_url = f'ssh://{git_user}@{git_url_path}/{org}/{java_package_name}.git'
-        portable_git_url = f'ssh://{git_user}@{git_url_path}/{org}/{java_package_name}-portable.git'
+        java_git_url = f'ssh://{git_user}@{git_host}/{org}/{java_package_name}.git'
+        portable_git_url = f'ssh://{git_user}@{git_host}/{org}/{java_package_name}-portable.git'
         self.__java_git_url = java_git_url
         self.__portable_git_url = portable_git_url
         self.__branch = branch

@@ -25,7 +25,7 @@ class SrpmImport(Import):
     # pylint: disable=too-many-arguments
     def __init__(
             self,
-            git_url_path: str,
+            git_host: str,
             srpm_path: str,
             release: str = '',
             branch: str = '',
@@ -63,7 +63,7 @@ class SrpmImport(Import):
         if preconv_names:
             package_name = pkg_name.replace('+', 'plus')
 
-        git_url = f'ssh://{git_user}@{git_url_path}/{org}/{package_name}.git'
+        git_url = f'ssh://{git_user}@{git_host}/{org}/{package_name}.git'
         self.__git_url = git_url
 
         file_name_search_srpm_res = re.search(r'.*?\.src\.rpm$',

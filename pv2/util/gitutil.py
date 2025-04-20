@@ -166,6 +166,18 @@ def tag(repo, tag_name:str, message: str, force=False):
     ref = repo.create_tag(tag_name, message=message, force=force)
     return ref
 
+def get_current_tag(repo: Repo):
+    """
+    Gets the current tag if possible given the current state of the repo
+    object. Otherwise it'll be none
+    """
+    current_commit = repo.head.commit
+    current_tag = next((tag for tag in repo.tags if tag.commit == current_commit), None)
+    if not current_tag:
+        return None
+
+    return current_tag
+
 def lsremote(url):
     """
     Helps check if a repo exists.

@@ -28,9 +28,9 @@ class GitImport(Import):
     def __init__(
             self,
             package: str,
-            source_git_url_path: str,
-            source_git_org_path: str,
-            dest_git_url_path: str,
+            source_git_host: str,
+            source_org: str,
+            dest_git_host: str,
             release: str,
             source_branch: str,
             upstream_lookaside: str,
@@ -61,16 +61,16 @@ class GitImport(Import):
         self.__rpm = package
         self.__release = release
         # pylint: disable=line-too-long
-        full_source_git_url_path = source_git_url_path
+        full_source_git_host = source_git_host
         if source_git_protocol == 'ssh':
-            full_source_git_url_path = f'{source_git_user}@{source_git_url_path}'
+            full_source_git_host = f'{source_git_user}@{source_git_host}'
 
         package_name = package
         if preconv_names:
             package_name = package.replace('+', 'plus')
 
-        self.__source_git_url = f'{source_git_protocol}://{full_source_git_url_path}/{source_git_org_path}/{package_name}.git'
-        self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_url_path}/{dest_org}/{package_name}.git'
+        self.__source_git_url = f'{source_git_protocol}://{full_source_git_host}/{source_org}/{package_name}.git'
+        self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_host}/{dest_org}/{package_name}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
         self.__source_branch = source_branch

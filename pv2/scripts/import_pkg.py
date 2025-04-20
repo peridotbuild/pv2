@@ -13,7 +13,7 @@ rpm_parser = subparser.add_parser('rpm')
 git_parser = subparser.add_parser('git')
 
 rpm_parser.add_argument('--gituser', type=str, required=False, default='git')
-rpm_parser.add_argument('--giturl', type=str, required=True)
+rpm_parser.add_argument('--githost', type=str, required=True)
 rpm_parser.add_argument('--branch', type=str, required=True)
 rpm_parser.add_argument('--srpm', type=str, required=True)
 rpm_parser.add_argument('--release', type=str, required=False, default='')
@@ -35,11 +35,11 @@ rpm_parser.add_argument('--aws-region', type=str, required=False, default=None)
 
 git_parser.add_argument('--name', type=str, required=True)
 git_parser.add_argument('--source-gituser', type=str, required=False, default='git')
-git_parser.add_argument('--source-giturl', type=str, required=True)
+git_parser.add_argument('--source-githost', type=str, required=True)
 git_parser.add_argument('--source-gitorg', type=str, required=True)
 git_parser.add_argument('--source-branch', type=str, required=True)
 git_parser.add_argument('--dest-gituser', type=str, required=False, default='git')
-git_parser.add_argument('--dest-giturl', type=str, required=True)
+git_parser.add_argument('--dest-githost', type=str, required=True)
 git_parser.add_argument('--dest-gitorg', type=str, required=False, default='rpms')
 git_parser.add_argument('--dest-branch', type=str, required=False, default='')
 git_parser.add_argument('--release', type=str, required=False, default='')
@@ -73,7 +73,7 @@ def main():
     """
     if command == 'rpm':
         classy = importutil.SrpmImport(
-                git_url_path=results.giturl,
+                git_host=results.githost,
                 srpm_path=results.srpm,
                 release=results.release,
                 preconv_names=results.preconv_names,
@@ -96,10 +96,10 @@ def main():
         classy = importutil.GitImport(
                 package=results.name,
                 source_git_user=results.source_gituser,
-                source_git_url_path=results.source_giturl,
-                source_git_org_path=results.source_gitorg,
+                source_git_host=results.source_githost,
+                source_org=results.source_gitorg,
                 dest_git_user=results.dest_gituser,
-                dest_git_url_path=results.dest_giturl,
+                dest_git_host=results.dest_githost,
                 dest_org=results.dest_gitorg,
                 release=results.release,
                 preconv_names=results.preconv_names,

@@ -28,16 +28,16 @@ class ModuleImport(Import):
     def __init__(
             self,
             module: str,
-            source_git_url_path: str,
-            source_git_org_path: str,
-            git_url_path: str,
+            source_git_host: str,
+            source_org: str,
+            git_host: str,
             release: str,
             branch: str,
             source_git_protocol: str = 'https',
             dest_branch: str = '',
             distprefix: str = 'el',
             git_user: str = 'git',
-            org: str = 'modules'
+            dest_org: str = 'modules'
     ):
         """
         Init the class
@@ -48,8 +48,8 @@ class ModuleImport(Import):
         self.__module = module
         self.__release = release
         # pylint: disable=line-too-long
-        self.__source_git_url = f'{source_git_protocol}://{source_git_url_path}/{source_git_org_path}/{module}.git'
-        self.__git_url = f'ssh://{git_user}@{git_url_path}/{org}/{module}.git'
+        self.__source_git_url = f'{source_git_protocol}://{source_git_host}/{source_org}/{module}.git'
+        self.__git_url = f'ssh://{git_user}@{git_host}/{dest_org}/{module}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
         self.__branch = branch
