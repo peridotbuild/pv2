@@ -30,7 +30,7 @@ class ModuleImport(Import):
             module: str,
             source_git_host: str,
             source_org: str,
-            git_host: str,
+            dest_git_host: str,
             release: str,
             branch: str,
             source_git_protocol: str = 'https',
@@ -49,7 +49,7 @@ class ModuleImport(Import):
         self.__release = release
         # pylint: disable=line-too-long
         self.__source_git_url = f'{source_git_protocol}://{source_git_host}/{source_org}/{module}.git'
-        self.__git_url = f'ssh://{git_user}@{git_host}/{dest_org}/{module}.git'
+        self.__git_url = f'ssh://{git_user}@{dest_git_host}/{dest_org}/{module}.git'
         self.__dist_prefix = distprefix
         self.__dist_tag = f'.{distprefix}{release}'
         self.__branch = branch
