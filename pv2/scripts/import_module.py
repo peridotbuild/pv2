@@ -25,7 +25,7 @@ def main():
             results.module,
             source_git_host=results.source_githost,
             source_org=results.source_gitorg,
-            dest_git_host=results.dest_giturl,
+            dest_git_host=results.dest_githost,
             dest_org=results.dest_gitorg,
             release=results.release,
             branch=results.branch,
