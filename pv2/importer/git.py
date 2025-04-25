@@ -5,6 +5,7 @@ Importer accessories
 """
 
 import os
+import sys
 import string
 from pv2.util import gitutil, rpmutil, generic
 from pv2.util import error as err
@@ -103,8 +104,24 @@ class GitImport(Import):
         If skip_lookaside is True, source files will just be deleted rather
         than uploaded to lookaside.
         """
-        check_source_repo = gitutil.lsremote(self.source_git_url)
-        check_dest_repo = gitutil.lsremote(self.dest_git_url)
+        try:
+            check_source_repo = gitutil.lsremote(self.source_git_url)
+        except err.GitInitError as exc:
+            pvlog.logger.exception('Upstream git repo does not exist')
+            sys.exit(2)
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            sys.exit(2)
+
+        try:
+            check_dest_repo = gitutil.lsremote(self.dest_git_url)
+        except err.GitInitError as exc:
+            pvlog.logger.exception(exc)
+            check_dest_repo = None
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            sys.exit(2)
+
         source_git_repo_path = f'/var/tmp/{self.rpm_name}-source'
         source_git_repo_spec = f'{source_git_repo_path}/{self.rpm_name}.spec'
         source_git_repo_changelog = f'{source_git_repo_path}/changelog'
@@ -116,10 +133,6 @@ class GitImport(Import):
         _dist_tag = self.dist_tag
         release_ver = self.__release
         repo_tags = []
-
-        # If the upstream repo doesn't report anything, exit.
-        if not check_source_repo:
-            raise err.GitInitError('Upstream git repo does not exist')
 
         if len(self.alternate_spec_name) > 0:
             source_git_repo_spec = f'{source_git_repo_path}/{self.alternate_spec_name}.spec'

@@ -21,7 +21,9 @@ __all__ = [
         'lsremote',
         'obj',
         'push',
-        'tag'
+        'tag',
+        'get_current_commit',
+        'get_current_tag'
 ]
 
 def add_all(repo):
@@ -166,6 +168,13 @@ def tag(repo, tag_name:str, message: str, force=False):
     ref = repo.create_tag(tag_name, message=message, force=force)
     return ref
 
+def get_current_commit(repo: Repo):
+    """
+    Gets the current commit hash given the current state of the repo.
+    """
+    current_commit = repo.head.commit
+    return current_commit
+
 def get_current_tag(repo: Repo):
     """
     Gets the current tag if possible given the current state of the repo
@@ -184,16 +193,19 @@ def lsremote(url):
 
     If repo exists: return references
     If repo exists and is completely empty: return empty dict
-    If repo does not exist: return None
+    If repo does not exist: raise an error
     """
     remote_refs = {}
+    # this gets around a forgejo and gitlab thing of asking for creds on repos
+    # that are private or don't even exist.
+    os.environ['GIT_ASKPASS'] = '/bin/echo'
     git_cmd = rawgit.cmd.Git()
     try:
         git_cmd.ls_remote(url)
     # pylint: disable=no-member
-    except gitexc.CommandError as exc:
+    except (gitexc.CommandError, gitexc.GitCommandError) as exc:
         pvlog.logger.exception('Repo does not exist or is not accessible: %s', exc.stderr)
-        return None
+        raise err.GitInitError('Repo does not exist or is not accessible')
 
     for ref in git_cmd.ls_remote(url).split('\n'):
         hash_ref_list = ref.split('\t')

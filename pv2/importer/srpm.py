@@ -5,6 +5,7 @@ Importer accessories
 """
 
 import os
+import sys
 import re
 from pv2.util import gitutil, fileutil, generic
 from pv2.util import error as err
@@ -111,7 +112,15 @@ class SrpmImport(Import):
         If skip_lookaside is True, source files will just be deleted rather
         than uploaded to lookaside.
         """
-        check_repo = gitutil.lsremote(self.git_url)
+        try:
+            check_repo = gitutil.lsremote(self.git_url)
+        except err.GitInitError as exc:
+            pvlog.logger.exception(exc)
+            check_repo = None
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            sys.exit(2)
+
         git_repo_path = f'/var/tmp/{self.rpm_name_replace}'
         branch = self.__branch
         repo_tags = []

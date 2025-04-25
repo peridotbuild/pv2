@@ -5,6 +5,7 @@ Importer accessories
 """
 
 import os
+import sys
 import re
 import shutil
 from pathlib import Path
@@ -38,6 +39,24 @@ class Import:
                 path.unlink()
             elif path.is_dir():
                 shutil.rmtree(path)
+
+    @staticmethod
+    def copy_everything(source_path, dest_path):
+        """
+        Copies everything from the source (except for .git) over to the new
+        repo.
+        """
+        try:
+            shutil.copytree(
+                    source_path,
+                    dest_path,
+                    ignore=shutil.ignore_patterns('.git'),
+                    dirs_exist_ok=True)
+        except shutil.Error as exc:
+            pvlog.logger.error('There was an issue with copying the data...')
+            for src, dst, msg in exc.args[0]:
+                pvlog.logger.error('%s -> %s: %s', src, dst, msg)
+            raise err.FileOperationError('File operation error')
 
     @staticmethod
     def find_spec_file(local_repo_path):
@@ -306,8 +325,10 @@ class Import:
         for directory in list_of_dirs:
             try:
                 shutil.rmtree(directory)
+            except FileNotFoundError:
+                pvlog.logger.warning('The directory %s was not found, this is simply a warning', directory)
             except Exception as exc:
-                raise err.FileNotFound(f'{directory} could not be deleted. Please check. {exc}')
+                raise err.FileNotFound(f'{directory} could not be deleted: {exc}')
 
     @staticmethod
     def get_module_stream_name(source_branch):

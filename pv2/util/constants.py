@@ -100,6 +100,7 @@ class ErrorConstants:
     ERR_CONFIGURATION = 9004
     ERR_NOTFOUND = 9005
     ERR_DOWNLOAD = 9006
+    ERR_FILEOP = 9007
     # Error in spec file
     MOCK_ERR_SPEC = 9100
     # Error trying to get dependencies for a build

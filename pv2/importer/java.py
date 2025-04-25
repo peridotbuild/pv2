@@ -5,6 +5,7 @@ Importer accessories
 """
 
 import os
+import sys
 import shutil
 from pv2.util import gitutil, fileutil
 from pv2.util import error as err
@@ -12,13 +13,14 @@ from pv2.util import log as pvlog
 from . import Import
 
 __all__ = ['JavaPortableImport']
-# todo: add in logging and replace print with log
+
+# pylint: disable=line-too-long,too-many-arguments,too-many-positional-arguments,too-many-statements
+# pylint: disable=too-many-locals,arguments-differ,too-many-branches
 
 class JavaPortableImport(Import):
     """
     Does some mangling for java portable packages
     """
-    # pylint: disable=too-many-arguments
     def __init__(
             self,
             pkg_name: str,
@@ -38,33 +40,48 @@ class JavaPortableImport(Import):
         self.__branch = branch
         self.__java_name = pkg_name
 
+    # it's probably not a good idea to override this... disabled the pylint for
+    # now.
     def pkg_import(self):
         """
         Do the import
         """
         fileutil.mkdir('/var/tmp/java')
-        check_repo = gitutil.lsremote(self.java_git_url)
-        portable_check_repo = gitutil.lsremote(self.portable_git_url)
+        try:
+            check_repo = gitutil.lsremote(self.java_git_url)
+        except err.GitInitError as exc:
+            pvlog.logger.exception(exc)
+            sys.exit(2)
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            sys.exit(2)
+
+        try:
+            portable_check_repo = gitutil.lsremote(self.portable_git_url)
+        except err.GitInitError as exc:
+            pvlog.logger.exception(exc)
+            portable_check_repo = None
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            sys.exit(2)
+
         java_git_repo_path = f'/var/tmp/java/{self.java_name}'
         portable_git_repo_path = f'/var/tmp/java/{self.java_name_portable}'
         branch = self.branch
         repo_tags = []
-        if check_repo:
-            # check for specific ref name
-            ref_check = f'refs/heads/{branch}' in check_repo
-            pvlog.logger.info('Cloning: %s', self.java_name)
-            if ref_check:
-                java_repo = gitutil.clone(
-                        git_url_path=self.java_git_url,
-                        repo_name=self.java_name,
-                        to_path=java_git_repo_path,
-                        branch=branch,
-                        single_branch=True
-                )
-            else:
-                raise err.GitCommitError('Invalid branch or information in general')
+        # check for specific ref name
+        ref_check = f'refs/heads/{branch}' in check_repo
+        pvlog.logger.info('Cloning: %s', self.java_name)
+        if ref_check:
+            java_repo = gitutil.clone(
+                    git_url_path=self.java_git_url,
+                    repo_name=self.java_name,
+                    to_path=java_git_repo_path,
+                    branch=branch,
+                    single_branch=True
+            )
         else:
-            raise err.GitCommitError('This repository does not exist.')
+            raise err.GitCommitError('Invalid branch or information in general')
 
         if portable_check_repo:
             # check for specific ref name
@@ -115,7 +132,7 @@ class JavaPortableImport(Import):
         shutil.copytree(f'{java_git_repo_path}/SOURCES', f'{portable_git_repo_path}/SOURCES')
         pvlog.logger.info('Copying portable spec file')
         shutil.copy2(f'{portable_git_repo_path}/SOURCES/{self.java_name}-portable.specfile', f'{portable_git_repo_path}/SPECS/{self.java_name}-portable.spec')
-        pvlog.logger.info(f'Committing {portable_tag}')
+        pvlog.logger.info('Committing %s', portable_tag)
 
         # Temporary hack like with git.
         dest_gitignore_file = f'{portable_git_repo_path}/.gitignore'
