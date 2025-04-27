@@ -458,7 +458,7 @@ def spec_parse(spec_file_path, dist: str = "%{nil}") -> list[str]:
         source_path = spec_path.parent
         # pylint: disable=no-member
         rpm.addMacro("dist", dist)
-        rpm.addMacro("_topdir", source_path)
+        rpm.addMacro("_topdir", str(source_path))
         for m in rpmconst.RPMSPEC_DEFINITIONS.items():
             rpm.addMacro(m[0], m[1])
 

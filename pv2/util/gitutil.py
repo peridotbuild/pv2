@@ -23,7 +23,8 @@ __all__ = [
         'push',
         'tag',
         'get_current_commit',
-        'get_current_tag'
+        'get_current_tag',
+        'ref_check'
 ]
 
 def add_all(repo):
@@ -187,6 +188,16 @@ def get_current_tag(repo: Repo):
 
     return current_tag
 
+def ref_check(repo: Repo, branch):
+    """
+    Checks if a given branch reference exists
+    """
+    ref = f'refs/heads/{branch}' in repo
+    if not ref:
+        raise err.GitCheckoutError(f'The defined branch ({branch}) does NOT exist')
+
+    return ref
+
 def lsremote(url):
     """
     Helps check if a repo exists.
@@ -203,9 +214,8 @@ def lsremote(url):
     try:
         git_cmd.ls_remote(url)
     # pylint: disable=no-member
-    except (gitexc.CommandError, gitexc.GitCommandError) as exc:
-        pvlog.logger.exception('Repo does not exist or is not accessible: %s', exc.stderr)
-        raise err.GitInitError('Repo does not exist or is not accessible')
+    except (gitexc.CommandError, gitexc.GitCommandError) as e:
+        raise err.GitInitError('Repo does not exist or is not accessible') from e
 
     for ref in git_cmd.ls_remote(url).split('\n'):
         hash_ref_list = ref.split('\t')

@@ -220,37 +220,21 @@ class NotAppliedError(GenericError):
     processes that information.
     """
     fault_code = errconst.EDITOR_ERR_GENERIC
-    def __init__(self, action: str, reason: str = "Failed"):
-        self.action = action
-        self.reason = reason
-        super().__init__(f"{action} failed: {reason}")
 
 class PatchConfigValueError(ValueError):
     """
     There was an issue reading in the configuration.
     """
     fault_code = errconst.EDITOR_ERR_CONFIG_VALUE
-    def __init__(self, action: str, reason: str):
-        self.action = action
-        self.reason = reason
-        super().__init__(f"{action}: {reason}")
 
 class PatchConfigTypeError(TypeError):
     """
     There was an issue reading in the configuration.
     """
     fault_code = errconst.EDITOR_ERR_CONFIG_TYPE
-    def __init__(self, action: str, reason: str):
-        self.action = action
-        self.reason = reason
-        super().__init__(f"{action}: {reason}")
 
-class TooManyFilesError(TypeError):
+class TooManyFilesError(GenericError):
     """
     There was an issue reading in the configuration.
     """
     fault_code = errconst.EDITOR_ERR_CONFIG_MANY_FILES
-    def __init__(self, action: str, reason: str):
-        self.action = action
-        self.reason = reason
-        super().__init__(f"{action}: {reason}")

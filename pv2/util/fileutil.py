@@ -19,20 +19,36 @@ __all__ = [
         'file_exists_local'
 ]
 
-def filter_files(directory_path: str, filter_filename: str) -> list:
+def filter_files(directory_path,
+                 filter_filename: str,
+                 recursive: bool = True) -> list:
     """
     Filter out specified files
+
+    Accepts either a str path or path object
     """
-    directory = Path(directory_path)
-    return_list = [str(file) for file in directory.rglob(filter_filename)]
+    if isinstance(directory_path, (str, bytes, Path)):
+        directory = Path(directory_path)
+    else:
+        directory = directory_path
+
+    if recursive:
+        return_list = [str(file) for file in directory.rglob(filter_filename)]
+    else:
+        return_list = [str(file) for file in directory.glob(filter_filename)]
     return return_list
 
 def filter_files_inverse(directory_path: str, filter_filename: str) -> list:
     """
     Filter out specified files (inverse)
+
+    Accepts either a str path or path object
     """
+    if isinstance(directory_path, (str, bytes, Path)):
+        directory = Path(directory_path)
+    else:
+        directory = directory_path
     return_list = []
-    directory = Path(directory_path)
     # This is a carry over from previous os module use.
     # I don't think there's a way to inverse rglob.
     for file in directory.iterdir():
