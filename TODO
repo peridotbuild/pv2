@@ -11,11 +11,23 @@ Rationale: os.path is quite clunky. A precursory look at pathlib tells me:
 Only downside is it may not handle s3 URL's very well, but that may or may not
 be a problem in the future when the support is added.
 
-# March 10, 2025
-Add s3 upload options to general importer
+# April 21, 2025
+The srpmproc importer should provide an option to disable strict-ness and
+look for *all* branches of a given version. This option cannot work when it the
+user is using a custom branch name (source or destination).
 
-Rationale: It should be possible to pre-emptively upload an artifact into an s3
-bucket before the actual srpmproc stage. The srpmproc stage will generally check
-whatever bucket it is assigned to to see if it's there before import (unless the
-options to not upload is given in whatever manner). Two birds, one stone with
-the imports, essentially.
+# April 24, 2025
+The importer and srpmproc modules do a lot of "raises", they should be using try
+and excepts where possible to make things more consistent.
+
+# April 25, 2025
+The srpmproc editor needs to support an "AddLines" function, though this should
+be achieved with SNR just fine. Maybe I'll add this, maybe I won't.
+
+# April 26, 2025
+The srpmproc importer needs to support modularity YAML's. This shouldn't be
+difficult to do.
+
+# April 26, 2025
+A testing framework needs to be setup to test certain functions of PV2 as a
+whole.

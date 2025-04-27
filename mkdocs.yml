@@ -1,0 +1,68 @@
+---
+# Wiki information
+site_name: pv2 python library
+site_url: https://pv2.rocky.page
+site_description: >-
+  Documentation for the pv2 python library
+
+# Repository
+repo_url: https://git.resf.org/peridot/pv2
+repo_name: pv2
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  highlightjs: true
+  hljs_languages:
+    - bash
+    - python
+    - yaml
+    - perl
+  features:
+    - search.highlight
+    - search.suggest
+    - toc.integrate
+    #- navigation.tabs
+    #- navigation.tabs.sticky
+    #- navigation.top
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - pymdownx.details # collapsable attributions
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+plugins:
+  - autolinks
+  - awesome-pages
+  - git-revision-date
+  - search
+  - macros:
+      include_dir: docs/include
+copyright: Copyright &copy; 2025 Rocky Enterprise Software Foundation
+...

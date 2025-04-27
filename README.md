@@ -7,7 +7,43 @@ designed as a POC to support peridot's potential transition to python, it
 provides utilities that can be used for developers in and outside of the
 projects in the RESF (such as Rocky Linux).
 
-For a list of things that I want to look into, check the `TODO` list.
+For a list of things that we want to look into, check the `TODO` list.
+
+## Supported Operations
+
+* importer utility from packages or a git source (such as Fedora or CentOS
+  Stream)
+* srpmproc utility - A complete rewrite of srpmproc in python
+
+### srpmproc go to python transition
+
+`srpmproc`, as written in go, is feature complete, but comes with some problems
+that either cannot be fixed properly due to features being bolted on after the
+fact or make it difficult for both the average user, a developer in a Rocky
+Linux SIG, or even a Rocky Linux maintainer to understand and use "correctly"
+and efficiently. While the tool works and does its job well, the issues that
+hold it back is what forced the original author to request that it berewritten
+in python, a more approachable language that some contributors or users will
+likely find easier to work with.
+
+It has essentially been rewritten to address the following:
+
+* rpm bindings - golang has *zero* bindings and there appears to be no interest
+  upstream to provide these.
+* patch configurations - The package configuration from srpmproc was not
+  intuitive and complex patching required a patch file to simplify some things.
+  This rewrite expects a much more simpler YAML formatted patch file and
+  multiple patch configurations per release branch can be simplified to the main
+  branch.
+* rpkg hooks - `rockypkg` development has started and this may serve as a
+  secondary hook to extend/override rpkg related commands.
+
+This by no means implies that golang is going away. Golang will remain the
+primary language in the Rocky ecosystem. Build management systems, direct
+utilities, and others will remain in golang.
+
+For usage instructions and documentation, see the "docs" pages in this
+repository.
 
 ## Requirements
 
@@ -18,28 +54,30 @@ For a list of things that I want to look into, check the `TODO` list.
   * CentOS Stream 9+ recommended
 
 * Python 3.9 or higher
-* rpm-build
+* rpm-build + \*-(s)rpm-macros
 * A few python modules
 
   * file-magic (python3-file-magic)
-  * GitPython (python3-GitPython or via pip)
-  * lxml (python3-lxml or via pip)
+  * GitPython (python3-GitPython via EPEL or pip)
+  * lxml (python3-lxml)
   * rpm (python3-rpm)
   * pycurl (python3-pycurl)
-
-* rpm macros packages (brought in by rpm-build package)
-
-  * \*-rpm-macros
-  * \*-srpm-macros
+  * PyYAML (python3-pyyaml)
+  * boto3 (optional)
+  * botocore (optional)
 
 * additional packages either in Fedora Linux or EPEL
 
   * rpmautospec-rpm-macros
 
-## Example Scripts
+## Scripts
 
-Example scripts are found in the `examples` directory, which can utilize
-parts of the pv2 module.
+Current scripts can be found in `pv2/scripts`.
+
+## Packaging
+
+At this time it is not packaged into an RPM but will eventually be placed
+into SIG/Core repositories for general consumption.
 
 ## Contributing
 

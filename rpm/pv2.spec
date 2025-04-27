@@ -6,7 +6,7 @@ Summary:        pv2 importer module
 License:        GPL-3.0-or-later
 URL:            https://git.resf.org/peridot/pv2
 Source0:        %{name}-%{version}.tar
-Source0:        https://git.resf.org/peridot/%{name}/archive/%{name}/%{version}.tar.gz
+#Source0:        https://git.resf.org/peridot/%{name}/archive/%{name}/%{version}.tar.gz
 
 BuildArch:      noarch
 
@@ -42,6 +42,24 @@ Recommends:     rpm-build
 %description -n python3-%{name}
 %{description}
 
+%package -n python3-%{name}-utils
+Summary: %{summary}
+Requires:       python3-%{name}
+
+%description -n python3-%{name}-utils
+%{description}
+
+This contains the pv2 built-in utilities
+
+%package -n srpmproc
+Summary: Provides the srpmproc script
+Requires:       python3-%{name}
+
+%description -n srpmproc
+%{description}
+
+This contains the srpmproc script for performing Rocky Linux-esque imports.
+
 %prep
 %autosetup -p1
 
@@ -57,10 +75,15 @@ Recommends:     rpm-build
 %files -n python3-%{name}
 %doc README.md
 %license LICENSE
-%{_bindir}/*
 # For noarch packages: sitelib
 %{python3_sitelib}/%{name}
 %{python3_sitelib}/*.dist-info
+
+%files -n python3-%{name}-utils
+%{_bindir}/import_*
+
+%files -n srpmproc
+%{_bindir}/srpmproc
 
 %changelog
 * Sun Apr 13 2025 Louis Abel <label@resf.org> - 0.14.1-1
