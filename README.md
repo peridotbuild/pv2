@@ -4,7 +4,7 @@
 
 pv2 is a backend module framework for building and development. Initially
 designed as a POC to support peridot's potential transition to python, it
-provides utilities that can be used for developers in and outside of the
+instead provides utilities that can be used for developers in and outside of the
 projects in the RESF (such as Rocky Linux).
 
 For a list of things that we want to look into, check the `TODO` list.
@@ -22,19 +22,18 @@ that either cannot be fixed properly due to features being bolted on after the
 fact or make it difficult for both the average user, a developer in a Rocky
 Linux SIG, or even a Rocky Linux maintainer to understand and use "correctly"
 and efficiently. While the tool works and does its job well, the issues that
-hold it back is what forced the original author to request that it berewritten
-in python, a more approachable language that some contributors or users will
-likely find easier to work with.
+hold it back is what forced the original author to request that it be rewritten
+in python, which can be seen to be a more approachable language that some
+contributors or users will likely find easier to work with.
 
 It has essentially been rewritten to address the following:
 
 * rpm bindings - golang has *zero* bindings and there appears to be no interest
-  upstream to provide these.
+  upstream to provide these at this time.
 * patch configurations - The package configuration from srpmproc was not
-  intuitive and complex patching required a patch file to simplify some things.
-  This rewrite expects a much more simpler YAML formatted patch file and
-  multiple patch configurations per release branch can be simplified to the main
-  branch.
+  intuitive and complex patching required a patch file to simplify things. This
+  rewrite expects a much more simpler YAML formatted patch file and multiple
+  patch configurations per release branch can be simplified to the main branch.
 * rpkg hooks - `rockypkg` development has started and this may serve as a
   secondary hook to extend/override rpkg related commands.
 

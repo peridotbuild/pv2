@@ -2,7 +2,7 @@
 title: srpmproc
 ---
 
-`srpmproc` is the utility that takes a given source repo that is in an expect
+`srpmproc` is the utility that takes a given source repo that is in an expected
 "srpm format" and imports it into another git location. While similar to the
 importer utility, its purpose is to provide greater flexibility in its imports
 and patching capability.

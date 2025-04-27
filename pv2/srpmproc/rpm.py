@@ -7,7 +7,7 @@ rpm operations
 import sys
 from pathlib import Path
 from pv2.util import log as pvlog
-from pv2.util import gitutil, rpmutil, fileutil, decorators
+from pv2.util import gitutil, rpmutil, fileutil, decorators, generic
 from pv2.util import error as err
 #from pv2.util.constants import RpmConstants as rpmconst
 from pv2.importer.operation import Import
@@ -53,6 +53,7 @@ class RpmImport(Import):
             skip_lookaside: bool = False,
             skip_duplicate_tags: bool = False,
             skip_sources: bool = True,
+            preconv_names: bool = False
     ):
         """
         Rev up the importer for srpmproc
@@ -81,6 +82,16 @@ class RpmImport(Import):
         if distcustom:
             self.__dist_tag = f'.{distcustom}'
 
+        # If we need to preconvert names, we can do it here. In most cases,
+        # srpmproc should be importing within the same git forge. But there
+        # will be cases that this isn't true, just like with the importer
+        # module. The importer module though generally imports from git forges
+        # that do not accept "+" in their repo names. This does not affect the
+        # spec files.
+        pkg = rpm
+        if preconv_names:
+            pkg = rpm.replace('+', 'plus')
+
         # Figure out the git url paths
         full_source_git_host = source_git_host
         if source_git_protocol == 'ssh':
@@ -90,12 +101,12 @@ class RpmImport(Import):
         if dest_git_protocol == 'ssh':
             full_dest_git_host = f'{dest_git_user}@{dest_git_host}'
 
-        self.__source_git_url = f'{source_git_protocol}://{full_source_git_host}/{source_org}/{rpm}.git'
-        self.__source_clone_path = f'/var/tmp/{self.rpm_name}-source'
-        self.__dest_git_url = f'{dest_git_protocol}://{full_dest_git_host}/{dest_org}/{rpm}.git'
-        self.__dest_clone_path = f'/var/tmp/{self.rpm_name}-dest'
-        self.__dest_patch_git_url = f'{dest_git_protocol}://{full_dest_git_host}/{patch_org}/{rpm}.git'
-        self.__dest_patch_clone_path = f'/var/tmp/{self.rpm_name}-patch'
+        self.__source_git_url = f'{source_git_protocol}://{full_source_git_host}/{source_org}/{pkg}.git'
+        self.__source_clone_path = f'/var/tmp/{pkg}-source'
+        self.__dest_git_url = f'{dest_git_protocol}://{full_dest_git_host}/{dest_org}/{pkg}.git'
+        self.__dest_clone_path = f'/var/tmp/{pkg}-dest'
+        self.__dest_patch_git_url = f'{dest_git_protocol}://{full_dest_git_host}/{patch_org}/{pkg}.git'
+        self.__dest_patch_clone_path = f'/var/tmp/{pkg}-patch'
 
         self.__aws_access_key_id = aws_access_key_id
         self.__aws_access_key = aws_access_key
@@ -314,8 +325,6 @@ class RpmImport(Import):
         # Apply patch list
         for patch_path in patch_config_list:
             pvlog.logger.info('Patch config: %s', patch_path)
-            #init_config = Config(config=patch)
-            #init_config.run(dest_path)
             Config(config=patch_path).run(dest_path)
             patched = True
 
@@ -341,20 +350,22 @@ class RpmImport(Import):
         _epoch, _version, _release = rpmutil.spec_evr(rpmutil.spec_parse(spec_file, dist=dist))
         return {"epoch": _epoch, "version": _version, "release": _release}
 
+    # Consider looking into putting this into importer/operation.py
+    # Though this is extremely specific to srpmproc
     def __commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
         """
         Commits and tags changes. Returns none if there's nothing to do.
         """
         pvlog.logger.info('Attempting to commit and tag...')
-        tag = f'imports/{self.dest_branch}/{nevra}'
+        tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
         if patched:
-            tag = f'patched/{self.dest_branch}/{nevra}'
+            tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
         gitutil.add_all(repo)
         verify = repo.is_dirty()
         if verify:
             gitutil.commit(repo, commit_msg)
             ref = gitutil.tag(repo, tag, commit_msg)
-            pvlog.logger.info(f'Tag: {tag}')
+            pvlog.logger.info('Tag: %s', tag)
             return True, str(repo.head.commit), ref
         pvlog.logger.info('No changes found.')
         return False, str(repo.head.commit), None
