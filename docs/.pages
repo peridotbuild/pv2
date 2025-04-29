@@ -6,4 +6,4 @@ nav:
   - ... | contributing.md
   - ... | importer.md
   - ... | srpmproc.md
-  - ... | api.md
+  - API: api

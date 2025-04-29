@@ -13,7 +13,7 @@ def clean_returned_dict(defaults: dict = None, fallback: str = "0"):
             result = func(*args, **kwargs)
             if isinstance(result, dict):
                 defaults_ = defaults or {}
-                return {k: (v if v is not None else defaults_.get(k, fallback))
+                return {k: (v if v not in [None, ""] else defaults_.get(k, fallback))
                         for k, v in result.items()}
             return result
         return wrapper

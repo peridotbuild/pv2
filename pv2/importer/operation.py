@@ -9,7 +9,7 @@ import sys
 import re
 import shutil
 from pathlib import Path
-from pv2.util import fileutil, rpmutil, processor, generic
+from pv2.util import fileutil, rpmutil, processor, generic, decorators
 from pv2.util import error as err
 from pv2.util import constants as const
 from pv2.util import uploader as upload
@@ -24,6 +24,14 @@ class Import:
     """
     Import an SRPM
     """
+    def __init__(
+            self,
+            preconv_names: bool = False
+    ):
+        """
+        Init everything
+        """
+
     @staticmethod
     def remove_everything(local_repo_path):
         """
@@ -194,6 +202,20 @@ class Import:
         return metadata
 
     @staticmethod
+    @decorators.clean_returned_dict(defaults={"epoch": "0"})
+    def get_evr_dict(spec_file, dist) -> dict:
+        """
+        Gets an EVR, returns as a dict
+        """
+        if isinstance(spec_file, dict):
+            _epoch = spec_file['epoch']
+            _version = spec_file['version']
+            _release = spec_file['release']
+        else:
+            _epoch, _version, _release = rpmutil.spec_evr(rpmutil.spec_parse(spec_file, dist=dist))
+        return {"epoch": _epoch, "version": _version, "release": _release}
+
+    @staticmethod
     def import_lookaside(
             repo_path: str,
             repo_name: str,
@@ -360,7 +382,7 @@ class Import:
 
         return f'{release}{minor_version}{micro_version}{timestamp}'
 
-    def pkg_import(self, skip_lookaside: bool = False, s3_upload: bool = False):
+    def pkg_import(self):
         """
         This function is used elsewhere
         """

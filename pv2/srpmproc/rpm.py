@@ -7,7 +7,7 @@ rpm operations
 import sys
 from pathlib import Path
 from pv2.util import log as pvlog
-from pv2.util import gitutil, rpmutil, fileutil, decorators, generic
+from pv2.util import gitutil, rpmutil, fileutil, generic
 from pv2.util import error as err
 #from pv2.util.constants import RpmConstants as rpmconst
 from pv2.importer.operation import Import
@@ -114,6 +114,10 @@ class RpmImport(Import):
         self.__aws_region = aws_region
         self.__aws_use_ssl = aws_use_ssl
 
+        # metadata files for sources
+        self.__metadata_file = f'{self.__source_clone_path}/.{rpm}.metadata'
+        self.__sources_file = f'{self.__source_clone_path}/sources'
+
     # functions
     def __clone_source(self):
         """
@@ -139,8 +143,7 @@ class RpmImport(Import):
         pvlog.logger.info('Checking if source branch exists: %s',
                           self.source_branch)
         try:
-            ref_check = gitutil.ref_check(check_source_repo,
-                                          self.source_branch)
+            gitutil.ref_check(check_source_repo, self.source_branch)
         except err.GitCheckoutError as exc:
             pvlog.logger.error('Branch does not exist: %s', exc)
             sys.exit(2)
@@ -172,39 +175,48 @@ class RpmImport(Import):
         """
         pvlog.logger.info('Checking if destination repo exists: %s', self.rpm_name)
 
+        new_repo = False
         try:
             check_dest_repo = gitutil.lsremote(self.dest_git_url)
         except err.GitInitError:
-            pvlog.logger.error(
+            pvlog.logger.warning(
                     'Git repo for %s does not exist at the destination',
                     self.rpm_name)
-            sys.exit(2)
+            pvlog.logger.warning('Will try to reimport.')
+            new_repo = True
         except Exception as exc:
-            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
+            pvlog.logger.error('An unexpected issue occurred: %s', exc)
             sys.exit(2)
 
-        pvlog.logger.info('Checking if destination branch exists: %s',
-                          self.dest_branch)
+        if not new_repo:
+            pvlog.logger.info('Checking if destination branch exists: %s',
+                              self.dest_branch)
 
-        ref_check = f'refs/heads/{self.dest_branch}' in check_dest_repo
-        pvlog.logger.info('Cloning downstream: %s (%s)', self.rpm_name, self.dest_branch)
-        if ref_check:
-            dest_repo = gitutil.clone(
-                    git_url_path=self.dest_git_url,
-                    repo_name=self.rpm_name_replace,
-                    to_path=self.dest_clone_path,
-                    branch=self.dest_branch,
-                    single_branch=True
-            )
+            ref_check = f'refs/heads/{self.dest_branch}' in check_dest_repo
+            pvlog.logger.info('Cloning downstream: %s (%s)', self.rpm_name, self.dest_branch)
+            if ref_check:
+                dest_repo = gitutil.clone(
+                        git_url_path=self.dest_git_url,
+                        repo_name=self.rpm_name_replace,
+                        to_path=self.dest_clone_path,
+                        branch=self.dest_branch,
+                        single_branch=True
+                )
+            else:
+                dest_repo = gitutil.clone(
+                        git_url_path=self.dest_git_url,
+                        repo_name=self.rpm_name_replace,
+                        to_path=self.dest_clone_path,
+                        branch=None
+                )
+                gitutil.checkout(dest_repo, branch=self.dest_branch, orphan=True)
         else:
-            dest_repo = gitutil.clone(
+            dest_repo = gitutil.init(
                     git_url_path=self.dest_git_url,
                     repo_name=self.rpm_name_replace,
                     to_path=self.dest_clone_path,
-                    branch=None
+                    branch=self.dest_branch
             )
-            gitutil.checkout(dest_repo, branch=self.dest_branch, orphan=True)
-
         return dest_repo
 
     def __clone_patch_repo(self):
@@ -341,15 +353,6 @@ class RpmImport(Import):
 
         return patched
 
-    # Move this to the importer module at some point?
-    @decorators.clean_returned_dict(defaults={"epoch": "0"})
-    def __get_nevra(self, spec_file, dist) -> dict:
-        """
-        Gets a NEVRA, returns as a dict
-        """
-        _epoch, _version, _release = rpmutil.spec_evr(rpmutil.spec_parse(spec_file, dist=dist))
-        return {"epoch": _epoch, "version": _version, "release": _release}
-
     # Consider looking into putting this into importer/operation.py
     # Though this is extremely specific to srpmproc
     def __commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
@@ -412,20 +415,22 @@ class RpmImport(Import):
 
             # Get the NEVRA and make a new tag
             pvlog.logger.info('Getting package information')
-            evra_dict = self.__get_nevra(_spec, _dist)
-            evra = "{version}-{release}".format(**evra_dict)
-            msg = f'import {self.rpm_name}-{evra}'
-            pvlog.logger.info('Importing: %s-%s', self.rpm_name, evra)
-            commit_res, commit_hash, commit_ref = self.__commit_and_tag(_dest, msg, evra, patched)
+            evr_dict = self.get_evr_dict(_spec, _dist)
+            evr = "{version}-{release}".format(**evr_dict)
+            nvr = f"{self.rpm_name}-{evr}"
+            msg = f'import {nvr}'
+            pvlog.logger.info('Importing: %s', nvr)
+            commit_res, commit_hash, commit_ref = self.__commit_and_tag(_dest, msg, nvr, patched)
             if commit_res:
                 self.__push_changes(_dest, commit_ref)
 
             result_dict['branch_commits'] = {self.dest_branch: commit_hash}
-            result_dict['branch_versions'] = {self.dest_branch: evra_dict}
-            print(result_dict)
+            result_dict['branch_versions'] = {self.dest_branch: evr_dict}
+            #print(result_dict)
         except (err.ConfigurationError, err.FileNotFound,
                 err.TooManyFilesError, err.NotAppliedError,
-                err.PatchConfigTypeError, err.PatchConfigValueError) as exc:
+                err.PatchConfigTypeError, err.PatchConfigValueError,
+                err.GitInitError) as exc:
             pvlog.logger.error('%s', exc)
             fault = exc.fault_code
         except Exception as exc:
@@ -441,6 +446,7 @@ class RpmImport(Import):
             sys.exit(fault)
 
         # return data
+        return result_dict
 
     def pkg_import(self, skip_lookaside: bool = False, s3_upload: bool = False):
         """
@@ -612,3 +618,17 @@ class RpmImport(Import):
         aws
         """
         return self.__aws_use_ssl
+
+    @property
+    def metadata_file(self):
+        """
+        Returns a metadata file path
+        """
+        return self.__metadata_file
+
+    @property
+    def sources_file(self):
+        """
+        Returns a sources metadata file path
+        """
+        return self.__sources_file
