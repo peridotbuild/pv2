@@ -5,12 +5,13 @@ rpm operations
 """
 
 import sys
+from functools import cached_property
 from pathlib import Path
 from pv2.util import log as pvlog
 from pv2.util import gitutil, rpmutil, fileutil, generic
 from pv2.util import error as err
 #from pv2.util.constants import RpmConstants as rpmconst
-from pv2.importer.operation import Import
+from pv2.importer.operation import Import, GitHandler
 from .editor import Config
 
 __all__ = ['RpmImport']
@@ -25,8 +26,8 @@ class RpmImport(Import):
     """
     def __init__(
             self,
-            rpm: str,
-            version: str,
+            package: str,
+            release: str,
             source_git_host: str,
             dest_git_host: str,
             source_branch=None,
@@ -50,7 +51,6 @@ class RpmImport(Import):
             aws_bucket=None,
             aws_region=None,
             aws_use_ssl: bool = False,
-            skip_lookaside: bool = False,
             overwrite_tags: bool = False,
             skip_sources: bool = True,
             preconv_names: bool = False
@@ -58,211 +58,55 @@ class RpmImport(Import):
         """
         Rev up the importer for srpmproc
         """
-        self.__rpm = rpm
-        self.__version = version
-        self.__skip_lookaside = skip_lookaside
-        self.__overwrite_tags = overwrite_tags
-        self.__skip_sources = skip_sources
-        self.__local_path = local_path
+        # I *should* be able to simplify this somehow
+        super().__init__(
+                _package=package,
+                _release=release,
+                _preconv_names=preconv_names,
+                _distprefix=distprefix,
+                _distcustom=distcustom,
+                _source_git_protocol=source_git_protocol,
+                _source_git_user=source_git_user,
+                _source_git_host=source_git_host,
+                _source_org=source_org,
+                _source_branch=source_branch,
+                _dest_git_host=dest_git_host,
+                _dest_git_user=dest_git_user,
+                _dest_org=dest_org,
+                _dest_branch=dest_branch,
+                _patch_org=patch_org,
+                _overwrite_tags=overwrite_tags,
+                _aws_access_key_id=aws_access_key_id,
+                _aws_access_key=aws_access_key,
+                _aws_bucket=aws_bucket,
+                _aws_region=aws_region,
+                _aws_use_ssl=aws_use_ssl,
+                _local_path=local_path,
+        )
+        self.__rpm_name = package
+
+        if self.source_git_protocol == 'ssh':
+            self._source_git_host = f'{self.source_git_user}@{self.source_git_host}'
+        if self.dest_git_protocol == 'ssh':
+            self._dest_git_host = f'{self.dest_git_user}@{self.dest_git_host}'
+
+        if preconv_names:
+            self._package = self._package.replace('+', 'plus')
 
         # Determine branch stuff here
-        set_source_branch = source_branch
-        set_dest_branch = source_branch
         if not source_branch:
-            set_source_branch = f'{source_branch_prefix}{version}{source_branch_suffix}'
+            self._source_branch = f'{source_branch_prefix}{release}{source_branch_suffix}'
         if not dest_branch:
-            set_dest_branch = f'{dest_branch_prefix}{version}{dest_branch_suffix}'
+            self._dest_branch = f'{dest_branch_prefix}{release}{dest_branch_suffix}'
 
-        self.__source_branch = set_source_branch
-        self.__dest_branch = set_dest_branch
-        self.__dist_prefix = distprefix
-        self.__dist_tag = f'.{distprefix}{version}'
-        self.__distcustom = distcustom
+        if self.distcustom:
+            self._dist_tag = f'.{self.distcustom}'
 
-        if distcustom:
-            self.__dist_tag = f'.{distcustom}'
+        self.__skip_sources = skip_sources
 
-        # If we need to preconvert names, we can do it here. In most cases,
-        # srpmproc should be importing within the same git forge. But there
-        # will be cases that this isn't true, just like with the importer
-        # module. The importer module though generally imports from git forges
-        # that do not accept "+" in their repo names. This does not affect the
-        # spec files.
-        pkg = rpm
-        if preconv_names:
-            pkg = rpm.replace('+', 'plus')
-
-        # Figure out the git url paths
-        full_source_git_host = source_git_host
-        if source_git_protocol == 'ssh':
-            full_source_git_host = f'{source_git_user}@{source_git_host}'
-
-        full_dest_git_host = dest_git_host
-        if dest_git_protocol == 'ssh':
-            full_dest_git_host = f'{dest_git_user}@{dest_git_host}'
-
-        self.__source_git_url = f'{source_git_protocol}://{full_source_git_host}/{source_org}/{pkg}.git'
-        self.__source_clone_path = f'/var/tmp/{pkg}-source'
-        self.__dest_git_url = f'{dest_git_protocol}://{full_dest_git_host}/{dest_org}/{pkg}.git'
-        self.__dest_clone_path = f'/var/tmp/{pkg}-dest'
-        self.__dest_patch_git_url = f'{dest_git_protocol}://{full_dest_git_host}/{patch_org}/{pkg}.git'
-        self.__dest_patch_clone_path = f'/var/tmp/{pkg}-patch'
-
-        self.__aws_access_key_id = aws_access_key_id
-        self.__aws_access_key = aws_access_key
-        self.__aws_bucket = aws_bucket
-        self.__aws_region = aws_region
-        self.__aws_use_ssl = aws_use_ssl
-
-        # metadata files for sources
-        self.__metadata_file = f'{self.__source_clone_path}/.{rpm}.metadata'
-        self.__sources_file = f'{self.__source_clone_path}/sources'
+        self.git = GitHandler(self)
 
     # functions
-    def __clone_source(self):
-        """
-        Clone source repo.
-
-        Check for spec file. Die early if none found.
-
-        Return git obj.
-        """
-        pvlog.logger.info('Checking if source repo exists: %s', self.rpm_name)
-
-        try:
-            check_source_repo = gitutil.lsremote(self.source_git_url)
-        except err.GitInitError:
-            pvlog.logger.exception(
-                    'Git repo for %s does not exist at the source',
-                    self.rpm_name)
-            sys.exit(2)
-        except Exception as exc:
-            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
-            sys.exit(2)
-
-        pvlog.logger.info('Checking if source branch exists: %s',
-                          self.source_branch)
-        try:
-            gitutil.ref_check(check_source_repo, self.source_branch)
-        except err.GitCheckoutError as exc:
-            pvlog.logger.error('Branch does not exist: %s', exc)
-            sys.exit(2)
-
-        pvlog.logger.info('Cloning upstream: %s (%s)', self.rpm_name, self.source_branch)
-        source_repo = gitutil.clone(
-                git_url_path=self.source_git_url,
-                repo_name=self.rpm_name_replace,
-                to_path=self.source_clone_path,
-                branch=self.source_branch,
-                single_branch=True
-        )
-        spec_file = self.find_spec_file(self.source_clone_path)
-        current_source_tag = gitutil.get_current_tag(source_repo)
-        if not current_source_tag:
-            pvlog.logger.warning('No tag found')
-        else:
-            pvlog.logger.info('Tag: %s', str(current_source_tag))
-
-        return source_repo, current_source_tag, spec_file
-
-    def __clone_dest(self):
-        """
-        Clone destination repo.
-
-        If it doesn't exist, we'll just prime ourselves for a new one.
-
-        Return git obj.
-        """
-        pvlog.logger.info('Checking if destination repo exists: %s', self.rpm_name)
-
-        new_repo = False
-        try:
-            check_dest_repo = gitutil.lsremote(self.dest_git_url)
-        except err.GitInitError:
-            pvlog.logger.warning(
-                    'Git repo for %s does not exist at the destination',
-                    self.rpm_name)
-            pvlog.logger.warning('Will try to reimport.')
-            new_repo = True
-        except Exception as exc:
-            pvlog.logger.error('An unexpected issue occurred: %s', exc)
-            sys.exit(2)
-
-        if not new_repo:
-            pvlog.logger.info('Checking if destination branch exists: %s',
-                              self.dest_branch)
-
-            ref_check = f'refs/heads/{self.dest_branch}' in check_dest_repo
-            pvlog.logger.info('Cloning downstream: %s (%s)', self.rpm_name, self.dest_branch)
-            if ref_check:
-                dest_repo = gitutil.clone(
-                        git_url_path=self.dest_git_url,
-                        repo_name=self.rpm_name_replace,
-                        to_path=self.dest_clone_path,
-                        branch=self.dest_branch,
-                        single_branch=True
-                )
-            else:
-                dest_repo = gitutil.clone(
-                        git_url_path=self.dest_git_url,
-                        repo_name=self.rpm_name_replace,
-                        to_path=self.dest_clone_path,
-                        branch=None
-                )
-                gitutil.checkout(dest_repo, branch=self.dest_branch, orphan=True)
-        else:
-            dest_repo = gitutil.init(
-                    git_url_path=self.dest_git_url,
-                    repo_name=self.rpm_name_replace,
-                    to_path=self.dest_clone_path,
-                    branch=self.dest_branch
-            )
-        return dest_repo
-
-    def __clone_patch_repo(self):
-        """
-        Clones the patch repo
-
-        Patch repos start at the main branch.
-
-        * main.yml - Applies to all branches
-        * branch_name.yml - Applies to destination branch
-        * package.yml - Applies to destination branch, but only in applicable
-                        branch if former does not exist in main
-        """
-        pvlog.logger.info('Checking if patch repo exists: %s', self.rpm_name)
-
-        try:
-            check_patch_repo = gitutil.lsremote(self.dest_patch_git_url)
-        except err.GitInitError:
-            pvlog.logger.error('No patch repo found, skipping')
-            return None
-        except Exception as exc:
-            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
-            sys.exit(2)
-
-        main_ref_check = 'refs/heads/main' in check_patch_repo
-        branch_ref_check = f'refs/main/{self.dest_branch}' in check_patch_repo
-
-        if main_ref_check:
-            dest_patch_repo = gitutil.clone(
-                    git_url_path=self.dest_patch_git_url,
-                    repo_name=self.rpm_name_replace,
-                    to_path=self.dest_patch_clone_path,
-                    branch='main'
-            )
-        elif branch_ref_check:
-            dest_patch_repo = gitutil.clone(
-                    git_url_path=self.dest_patch_git_url,
-                    repo_name=self.rpm_name_replace,
-                    to_path=self.dest_patch_clone_path,
-                    branch=self.dest_branch
-            )
-        else:
-            return None, False, False
-
-        return dest_patch_repo, main_ref_check, branch_ref_check
-
     def __upload_or_check_artifacts(self):
         """
         Checks for artifacts in a given bucket and reports if they're there or
@@ -288,6 +132,16 @@ class RpmImport(Import):
             )
 
         return None
+
+    def __get_checksum_from_dest(self, repo_path):
+        """
+        Gets the checksum from the destination
+        """
+        met = Path(repo_path) / f'.{self.rpm_name}.checksum'
+        with open(met, 'r') as fp:
+            content = fp.read()
+
+        return content.strip()
 
     def __perform_patch(self, patch_repo, main_branch, dest_branch):
         """
@@ -353,49 +207,6 @@ class RpmImport(Import):
 
         return patched
 
-    # Consider looking into putting this into importer/operation.py
-    # Though this is extremely specific to srpmproc
-    def __commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
-        """
-        Commits and tags changes. Returns none if there's nothing to do.
-        """
-        pvlog.logger.info('Attempting to commit and tag...')
-        tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
-        if patched:
-            tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
-
-        if tag in repo.tags:
-            pvlog.logger.warning('!! Tag already exists !!')
-            if not self.overwrite_tags:
-                return False, str(repo.head.commit), None
-            pvlog.logger.warning('Overwriting tag...')
-
-        gitutil.add_all(repo)
-        verify = repo.is_dirty()
-        if verify:
-            gitutil.commit(repo, commit_msg)
-            ref = gitutil.tag(repo, tag, commit_msg, self.overwrite_tags)
-            pvlog.logger.info('Tag: %s', tag)
-            return True, str(repo.head.commit), ref
-        pvlog.logger.info('No changes found.')
-        return False, str(repo.head.commit), None
-
-    def __push_changes(self, repo, ref):
-        """
-        Pushes all changes to destination
-        """
-        pvlog.logger.info('Pushing to downstream repo')
-        gitutil.push(repo, ref)
-
-    def __srpmproc_cleanup(self):
-        """
-        Cleans up all stuff
-        """
-        pvlog.logger.info('Cleaning up')
-        self.perform_cleanup([self.source_clone_path,
-                              self.dest_clone_path,
-                              self.dest_patch_clone_path])
-
     def srpmproc_import(self):
         """
         Imports the package
@@ -403,14 +214,15 @@ class RpmImport(Import):
         fault = 0
         result_dict = {}
         try:
-            _source, _source_tag, _spec = self.__clone_source()
-            _dest = self.__clone_dest()
-            _patch, _main_ref, _branch_ref = self.__clone_patch_repo()
-            _dist = f'.{self.dist_prefix}{self.version}'
+            _source, _source_tag, _spec = self.git.clone_source()
+            _dest = self.git.clone_dest()
+            _patch, _main_ref, _branch_ref = self.git.clone_patch_repo()
+            _dist = self.dist_tag
 
             if _source_tag:
                 _dist = self.parse_git_tag(str(_source_tag))[-1]
 
+            # This is the absolute final dist override
             if self.distcustom:
                 _dist = self.distcustom
 
@@ -419,18 +231,24 @@ class RpmImport(Import):
             self.remove_everything(_dest.working_dir)
             self.copy_everything(_source.working_dir, _dest.working_dir)
             patched = self.__perform_patch(_patch, _main_ref, _branch_ref)
+            checksum_from_pkg = self.__get_checksum_from_dest(_dest.working_dir)
 
             # Get the NEVRA and make a new tag
             pvlog.logger.info('Getting package information')
             evr_dict = self.get_evr_dict(_spec, _dist)
-            evr = "{version}-{release}".format(**evr_dict)
+            evr = "{release}-{release}".format(**evr_dict)
             nvr = f"{self.rpm_name}-{evr}"
             msg = f'import {nvr}'
             pvlog.logger.info('Importing: %s', nvr)
-            commit_res, commit_hash, commit_ref = self.__commit_and_tag(_dest, msg, nvr, patched)
+            commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, nvr, patched)
             if commit_res:
-                self.__push_changes(_dest, commit_ref)
+                self.git.push_changes(_dest, commit_ref)
 
+            result_dict = self.set_import_metadata(
+                    commit_hash,
+                    evr_dict,
+                    checksum_from_pkg
+            )
             result_dict['branch_commits'] = {self.dest_branch: commit_hash}
             result_dict['branch_versions'] = {self.dest_branch: evr_dict}
             #print(result_dict)
@@ -447,7 +265,9 @@ class RpmImport(Import):
         else:
             pvlog.logger.info('Completed')
         finally:
-            self.__srpmproc_cleanup()
+            self.perform_cleanup([self.source_clone_path,
+                                  self.dest_clone_path,
+                                  self.dest_patch_clone_path])
 
         if fault > 0:
             sys.exit(fault)
@@ -462,118 +282,46 @@ class RpmImport(Import):
         raise NotImplementedError("This function is useless here. Use srpmproc_import instead.")
 
     # properties
+    @cached_property
+    def source_git_url(self) -> str:
+        """
+        Returns the source git url
+        """
+        if not all([self.source_git_protocol, self.source_git_host, self.source_org, self.package]):
+            raise ValueError("Cannot compute source_git_url - Missing values")
+        return f"{self.source_git_protocol}://{self.source_git_host}/{self.source_org}/{self.package}.git"
+    @cached_property
+    def dest_git_url(self) -> str:
+        """
+        Returns the dest git url
+        """
+        if not all([self.dest_git_host, self.dest_org, self.package]):
+            raise ValueError("Cannot compute source_git_url - Missing values")
+        return f"{self.dest_git_protocol}://{self.dest_git_host}/{self.dest_org}/{self.package}.git"
+
+    @cached_property
+    def dest_patch_git_url(self):
+        """
+        Returns the destination git url
+        """
+        if not all([self.dest_git_host, self.patch_org, self.package]):
+            raise ValueError("Cannot compute source_git_url - Missing values")
+        return f"{self.dest_git_protocol}://{self.dest_git_host}/{self.patch_org}/{self.package}.git"
+
     @property
     def rpm_name(self):
         """
         Returns the name of the RPM we're working with
         """
-        return self.__rpm
+        return self.__rpm_name
 
     @property
     def rpm_name_replace(self):
         """
         Returns the name of the RPM we're working with
         """
-        new_name = self.__rpm.replace('+', 'plus')
+        new_name = self.__rpm_name.replace('+', 'plus')
         return new_name
-
-    @property
-    def version(self):
-        """
-        Returns the release version we're working with
-        """
-        return self.__version
-
-    @property
-    def source_branch(self):
-        """
-        Returns the source branch
-        """
-        return self.__source_branch
-
-    @property
-    def dest_branch(self):
-        """
-        Returns the destination branch
-        """
-        return self.__dest_branch
-
-    @property
-    def source_git_url(self):
-        """
-        Returns the source git url
-        """
-        return self.__source_git_url
-
-    @property
-    def source_clone_path(self):
-        """
-        Returns the source clone path
-        """
-        return self.__source_clone_path
-
-    @property
-    def dest_git_url(self):
-        """
-        Returns the destination git url
-        """
-        return self.__dest_git_url
-
-    @property
-    def dest_clone_path(self):
-        """
-        Returns the destination clone path
-        """
-        return self.__dest_clone_path
-
-    @property
-    def dest_patch_git_url(self):
-        """
-        Returns the destination git url
-        """
-        return self.__dest_patch_git_url
-
-    @property
-    def dest_patch_clone_path(self):
-        """
-        Returns the destination clone path
-        """
-        return self.__dest_patch_clone_path
-
-    @property
-    def dist_tag(self):
-        """
-        Returns the dist tag
-        """
-        return self.__dist_tag
-
-    @property
-    def distcustom(self):
-        """
-        Returns the custom dist tag
-        """
-        return self.__distcustom
-
-    @property
-    def dist_prefix(self):
-        """
-        Returns the dist_prefix, which is normally "el"
-        """
-        return self.__dist_prefix
-
-    @property
-    def skip_lookaside(self):
-        """
-        Skip lookaside
-        """
-        return self.__skip_lookaside
-
-    @property
-    def overwrite_tags(self):
-        """
-        Skip duplicate tags
-        """
-        return self.__overwrite_tags
 
     @property
     def skip_sources(self):
@@ -582,60 +330,3 @@ class RpmImport(Import):
         """
         pvlog.logger.warning('WARNING: Sources for this import will not be verified')
         return self.__skip_sources
-
-    @property
-    def local_path(self):
-        """
-        Local sources path. This is equal to "tmpfs" of the prior srpmproc
-        version.
-        """
-        return self.__local_path
-
-    @property
-    def aws_access_key_id(self):
-        """
-        aws
-        """
-        return self.__aws_access_key_id
-
-    @property
-    def aws_access_key(self):
-        """
-        aws
-        """
-        return self.__aws_access_key
-
-    @property
-    def aws_bucket(self):
-        """
-        aws
-        """
-        return self.__aws_bucket
-
-    @property
-    def aws_region(self):
-        """
-        aws
-        """
-        return self.__aws_region
-
-    @property
-    def aws_use_ssl(self):
-        """
-        aws
-        """
-        return self.__aws_use_ssl
-
-    @property
-    def metadata_file(self):
-        """
-        Returns a metadata file path
-        """
-        return self.__metadata_file
-
-    @property
-    def sources_file(self):
-        """
-        Returns a sources metadata file path
-        """
-        return self.__sources_file

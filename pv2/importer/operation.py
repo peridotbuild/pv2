@@ -8,7 +8,6 @@ import os
 import sys
 import re
 import shutil
-import copy
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 from pathlib import Path
@@ -22,8 +21,8 @@ from .models import ImportMetadata
 
 __all__ = ['Import', 'GitHandler']
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
-# pylint: disable=line-too-long
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-instance-attributes
+# pylint: disable=line-too-long,too-many-public-methods,broad-exception-caught
 
 @dataclass
 class Import:
@@ -41,11 +40,16 @@ class Import:
     _source_git_host: Optional[str] = None
     _source_org: Optional[str] = None
     _source_branch: Optional[str] = None
+    _source_branch_prefix: Optional[str] = 'c'
+    _source_branch_suffix: Optional[str] = ''
     _dest_git_protocol: Optional[str] = 'ssh'
     _dest_git_host: Optional[str] = None
     _dest_git_user: Optional[str] = 'git'
     _dest_org: Optional[str] = 'rpms'
     _dest_branch: Optional[str] = None
+    _dest_branch_prefix: Optional[str] = 'r'
+    _dest_branch_suffix: Optional[str] = ''
+    _patch_org: str = 'patch'
     _overwrite_tags: Optional[bool] = False
 
     _dest_lookaside: Optional[str] = '/var/www/html/sources'
@@ -57,6 +61,7 @@ class Import:
     _aws_use_ssl: Optional[bool] = False
     _skip_lookaside: Optional[bool] = False
     _s3_upload: Optional[bool] = False
+    _local_path: Optional[str] = None
 
     _branch_commits: dict = field(default_factory=dict)
     _branch_versions: dict = field(default_factory=dict)
@@ -378,7 +383,7 @@ class Import:
             try:
                 shutil.rmtree(directory)
             except FileNotFoundError:
-                pvlog.logger.warning('The directory %s was not found, this is simply a warning', directory)
+                pvlog.logger.warning('The directory %s was not found (this may be ok)', directory)
             except Exception as exc:
                 raise err.FileNotFound(f'{directory} could not be deleted: {exc}')
 
@@ -481,6 +486,20 @@ class Import:
         return self._source_branch
 
     @property
+    def source_branch_prefix(self):
+        """
+        Returns the source branch prefix
+        """
+        return self._source_branch_prefix
+
+    @property
+    def source_branch_suffix(self):
+        """
+        Returns the source branch suffix
+        """
+        return self._source_branch_suffix
+
+    @property
     def package(self):
         """
         Returns the name of the RPM we're working with
@@ -518,7 +537,7 @@ class Import:
     @property
     def dest_org(self):
         """
-        Returns the git host
+        Returns the git dest org
         """
         return self._dest_org
 
@@ -530,11 +549,32 @@ class Import:
         return self._dest_branch
 
     @property
+    def dest_branch_prefix(self):
+        """
+        Returns the dest branch prefix
+        """
+        return self._dest_branch_prefix
+
+    @property
+    def dest_branch_suffix(self):
+        """
+        Returns the dest branch suffix
+        """
+        return self._dest_branch_suffix
+
+    @property
     def dest_lookaside(self):
         """
         Returns destination local lookaside
         """
         return self._dest_lookaside
+
+    @property
+    def patch_org(self):
+        """
+        Returns the git patch org
+        """
+        return self._patch_org
 
     @property
     def upstream_lookaside(self):
@@ -663,6 +703,13 @@ class Import:
         return f'/var/tmp/{self._package}-dest'
 
     @property
+    def dest_patch_clone_path(self):
+        """
+        Returns the destination clone path
+        """
+        return f'/var/tmp/{self._package}-patch'
+
+    @property
     def metadata_file(self):
         """
         Returns a metadata file path
@@ -683,8 +730,206 @@ class Import:
         """
         return self._preconv_names
 
+    @property
+    def local_path(self):
+        """
+        Returns local path upload
+        """
+        return self._local_path
+
 class GitHandler:
     """
     Git Handler class, specifically for handling repeatable actions among all
     importer modules.
     """
+    def __init__(self, context):
+        """
+        Init the git handler
+        """
+        self.ctx = context
+
+    def __getattr__(self, name):
+        """
+        Get attributes from context
+        """
+        return getattr(self.ctx, name)
+
+    # all shareable functions
+    def clone_source(self):
+        """
+        Clone source repo
+
+        Check for a spec file and metadata file. Die early if spec isn't found
+        at least. Warn if there's no metadata.
+        """
+        pvlog.logger.info('Checking if source repo exists: %s', self.rpm_name)
+        try:
+            check_source_repo = gitutil.lsremote(self.source_git_url)
+        except err.GitInitError:
+            pvlog.logger.exception(
+                    'Git repo for %s does not exist at the source',
+                    self.rpm_name)
+            sys.exit(2)
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
+            sys.exit(2)
+
+        pvlog.logger.info('Checking if source branch exists: %s',
+                          self.source_branch)
+        try:
+            gitutil.ref_check(check_source_repo, self.source_branch)
+        except err.GitCheckoutError as exc:
+            pvlog.logger.error('Branch does not exist: %s', exc)
+            sys.exit(2)
+
+        pvlog.logger.info('Cloning upstream: %s (%s)', self.rpm_name, self.source_branch)
+        source_repo = gitutil.clone(
+                git_url_path=self.source_git_url,
+                repo_name=self.rpm_name_replace,
+                to_path=self.source_clone_path,
+                branch=self.source_branch,
+                single_branch=True
+        )
+        spec_file = self.find_spec_file(self.source_clone_path)
+        current_source_tag = gitutil.get_current_tag(source_repo)
+        if not current_source_tag:
+            pvlog.logger.warning('No tag found')
+        else:
+            pvlog.logger.info('Tag: %s', str(current_source_tag))
+
+        return source_repo, current_source_tag, spec_file
+
+    def clone_dest(self):
+        """
+        Clone destination repo.
+
+        If it doesn't exist, we'll just prime ourselves for a new one.
+
+        Return git obj.
+        """
+        pvlog.logger.info('Checking if destination repo exists: %s', self.rpm_name)
+
+        new_repo = False
+        try:
+            check_dest_repo = gitutil.lsremote(self.dest_git_url)
+        except err.GitInitError:
+            pvlog.logger.warning('Repo may not exist or is private... Try to import anyway.')
+            new_repo = True
+        except Exception as exc:
+            pvlog.logger.error('An unexpected issue occurred: %s', exc)
+            sys.exit(2)
+
+        if not new_repo:
+            pvlog.logger.info('Checking if destination branch exists: %s',
+                              self.dest_branch)
+
+            ref_check = f'refs/heads/{self.dest_branch}' in check_dest_repo
+            pvlog.logger.info('Cloning downstream: %s (%s)', self.rpm_name, self.dest_branch)
+            if ref_check:
+                dest_repo = gitutil.clone(
+                        git_url_path=self.dest_git_url,
+                        repo_name=self.rpm_name_replace,
+                        to_path=self.dest_clone_path,
+                        branch=self.dest_branch,
+                        single_branch=True
+                )
+            else:
+                dest_repo = gitutil.clone(
+                        git_url_path=self.dest_git_url,
+                        repo_name=self.rpm_name_replace,
+                        to_path=self.dest_clone_path,
+                        branch=None
+                )
+                gitutil.checkout(dest_repo, branch=self.dest_branch, orphan=True)
+        else:
+            dest_repo = gitutil.init(
+                    git_url_path=self.dest_git_url,
+                    repo_name=self.rpm_name_replace,
+                    to_path=self.dest_clone_path,
+                    branch=self.dest_branch
+            )
+        return dest_repo
+
+    def clone_patch_repo(self):
+        """
+        Clones the patch repo
+
+        Patch repos start at the main branch.
+
+        * main.yml - Applies to all branches
+        * branch_name.yml - Applies to destination branch
+        * package.yml - Applies to destination branch, but only in applicable
+                        branch if former does not exist in main
+        """
+        pvlog.logger.info('Checking if patch repo exists: %s', self.rpm_name)
+
+        try:
+            check_patch_repo = gitutil.lsremote(self.dest_patch_git_url)
+        except err.GitInitError:
+            pvlog.logger.error('No patch repo found, skipping')
+            return None
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
+            sys.exit(2)
+
+        main_ref_check = 'refs/heads/main' in check_patch_repo
+        branch_ref_check = f'refs/main/{self.dest_branch}' in check_patch_repo
+
+        if main_ref_check:
+            dest_patch_repo = gitutil.clone(
+                    git_url_path=self.dest_patch_git_url,
+                    repo_name=self.rpm_name_replace,
+                    to_path=self.dest_patch_clone_path,
+                    branch='main'
+            )
+        elif branch_ref_check:
+            dest_patch_repo = gitutil.clone(
+                    git_url_path=self.dest_patch_git_url,
+                    repo_name=self.rpm_name_replace,
+                    to_path=self.dest_patch_clone_path,
+                    branch=self.dest_branch
+            )
+        else:
+            return None, False, False
+
+        return dest_patch_repo, main_ref_check, branch_ref_check
+
+    def commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
+        """
+        Commits and tags changes. Returns none if there's nothing to do.
+        """
+        # This is a temporary hack. There are cases that the .gitignore that's
+        # provided by upstream errorneouly keeps out certain sources, despite
+        # the fact that they were pushed before. We're killing off any
+        # .gitignore we find in the root.
+        dest_gitignore_file = f'{self.dest_clone_path}/.gitignore'
+        if os.path.exists(dest_gitignore_file):
+            os.remove(dest_gitignore_file)
+
+        tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
+
+        if tag in repo.tags:
+            pvlog.logger.warning('!! Tag already exists !!')
+            if not self.overwrite_tags:
+                return False, str(repo.head.commit), None
+            pvlog.logger.warning('Overwriting tag...')
+
+        pvlog.logger.info('Attempting to commit and tag...')
+        if patched:
+            tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
+        gitutil.add_all(repo)
+        verify = repo.is_dirty()
+        if verify:
+            gitutil.commit(repo, commit_msg)
+            ref = gitutil.tag(repo, tag, commit_msg)
+            pvlog.logger.info('Tag: %s', tag)
+            return True, str(repo.head.commit), ref
+        pvlog.logger.info('No changes found.')
+        return False, str(repo.head.commit), None
+
+    def push_changes(self, repo, ref):
+        """
+        Pushes all changes to destination
+        """
+        pvlog.logger.info('Pushing to downstream repo')
+        gitutil.push(repo, ref)
