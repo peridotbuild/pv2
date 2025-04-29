@@ -8,29 +8,59 @@ import os
 import sys
 import re
 import shutil
+import copy
+from dataclasses import dataclass, field, asdict
+from typing import Optional
 from pathlib import Path
 from pv2.util import fileutil, rpmutil, processor, generic, decorators
+from pv2.util import gitutil
 from pv2.util import error as err
 from pv2.util import constants as const
 from pv2.util import uploader as upload
 from pv2.util import log as pvlog
+from .models import ImportMetadata
 
-__all__ = ['Import']
+__all__ = ['Import', 'GitHandler']
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 # pylint: disable=line-too-long
 
+@dataclass
 class Import:
     """
     Import an SRPM
     """
-    def __init__(
-            self,
-            preconv_names: bool = False
-    ):
-        """
-        Init everything
-        """
+    _package: Optional[str] = None
+    _release: Optional[str] = None
+    _preconv_names: Optional[bool] = False
+    _distprefix: str = 'el'
+    _distcustom: Optional[str] = None
+    _alternate_spec_name: Optional[str] = None
+    _source_git_protocol: Optional[str] = 'https'
+    _source_git_user: Optional[str] = 'git'
+    _source_git_host: Optional[str] = None
+    _source_org: Optional[str] = None
+    _source_branch: Optional[str] = None
+    _dest_git_protocol: Optional[str] = 'ssh'
+    _dest_git_host: Optional[str] = None
+    _dest_git_user: Optional[str] = 'git'
+    _dest_org: Optional[str] = 'rpms'
+    _dest_branch: Optional[str] = None
+    _overwrite_tags: Optional[bool] = False
+
+    _dest_lookaside: Optional[str] = '/var/www/html/sources'
+    _upstream_lookaside: Optional[str] = None
+    _aws_access_key_id: Optional[str] = None
+    _aws_access_key: Optional[str]= None
+    _aws_bucket: Optional[str]= None
+    _aws_region: Optional[str]= None
+    _aws_use_ssl: Optional[bool] = False
+    _skip_lookaside: Optional[bool] = False
+    _s3_upload: Optional[bool] = False
+
+    _branch_commits: dict = field(default_factory=dict)
+    _branch_versions: dict = field(default_factory=dict)
+    _package_checksum: Optional[str] = 'Unknown'
 
     @staticmethod
     def remove_everything(local_repo_path):
@@ -382,8 +412,279 @@ class Import:
 
         return f'{release}{minor_version}{micro_version}{timestamp}'
 
+    def set_import_metadata(
+            self,
+            commit_hash,
+            evr_dict,
+            checksum) -> ImportMetadata:
+        """
+        Import metadata for the end of the import
+        """
+        self._branch_commits = {self.dest_branch: commit_hash}
+        self._branch_versions = {self.dest_branch: evr_dict}
+        self._package_checksum = checksum
+
+        meta = ImportMetadata(
+                branch_commits=self._branch_commits,
+                branch_versions=self._branch_versions,
+                package_checksum=self._package_checksum,
+        )
+        return asdict(meta)
+
     def pkg_import(self):
         """
         This function is used elsewhere
         """
         raise NotImplementedError("Imports can only be performed in subclasses")
+
+    # Properties
+    @property
+    def alternate_spec_name(self):
+        """
+        Returns the actual name of the spec file if it's not the package name.
+        """
+        return self._alternate_spec_name
+
+    @property
+    def source_git_host(self):
+        """
+        Returns the git host
+        """
+        return self._source_git_host
+
+    @property
+    def source_git_user(self):
+        """
+        Returns the git user
+        """
+        return self._source_git_user
+
+    @property
+    def source_git_protocol(self):
+        """
+        Returns the git protocol
+        """
+        return self._source_git_protocol
+
+    @property
+    def source_org(self):
+        """
+        Returns the git host
+        """
+        return self._source_org
+
+    @property
+    def source_branch(self):
+        """
+        Returns the starting branch
+        """
+        return self._source_branch
+
+    @property
+    def package(self):
+        """
+        Returns the name of the RPM we're working with
+        """
+        return self._package
+
+    @property
+    def release_ver(self):
+        """
+        Returns the release version of this import
+        """
+        return self._release
+
+    @property
+    def dest_git_host(self):
+        """
+        Returns the git host
+        """
+        return self._dest_git_host
+
+    @property
+    def dest_git_user(self):
+        """
+        Returns the git user
+        """
+        return self._dest_git_user
+
+    @property
+    def dest_git_protocol(self):
+        """
+        Returns the git protocol
+        """
+        return self._dest_git_protocol
+
+    @property
+    def dest_org(self):
+        """
+        Returns the git host
+        """
+        return self._dest_org
+
+    @property
+    def dest_branch(self) -> str:
+        """
+        Returns the starting branch
+        """
+        return self._dest_branch
+
+    @property
+    def dest_lookaside(self):
+        """
+        Returns destination local lookaside
+        """
+        return self._dest_lookaside
+
+    @property
+    def upstream_lookaside(self):
+        """
+        Returns upstream lookaside
+        """
+        return self._upstream_lookaside
+
+    @property
+    def upstream_lookaside_url(self):
+        """
+        Returns upstream lookaside
+        """
+        return self.get_lookaside_template_path(self._upstream_lookaside)
+
+    @property
+    def skip_lookaside(self):
+        """
+        Skip lookaside
+        """
+        return self._skip_lookaside
+
+    @property
+    def overwrite_tags(self):
+        """
+        Skip duplicate tags
+        """
+        return self._overwrite_tags
+
+    @property
+    def s3_upload(self):
+        """
+        S3 upload
+        """
+        return self._s3_upload
+
+    @property
+    def aws_access_key_id(self):
+        """
+        aws
+        """
+        return self._aws_access_key_id
+
+    @property
+    def aws_access_key(self):
+        """
+        aws
+        """
+        return self._aws_access_key
+
+    @property
+    def aws_bucket(self):
+        """
+        aws
+        """
+        return self._aws_bucket
+
+    @property
+    def aws_region(self):
+        """
+        aws
+        """
+        return self._aws_region
+
+    @property
+    def aws_use_ssl(self):
+        """
+        aws
+        """
+        return self._aws_use_ssl
+
+    @property
+    def branch_commits(self):
+        """
+        Branch commits
+        """
+        return self._branch_commits
+
+    @property
+    def branch_versions(self):
+        """
+        Branch versions
+        """
+        return self._branch_versions
+
+    @property
+    def package_checksum(self):
+        """
+        Branch versions
+        """
+        return self._package_checksum
+
+    @property
+    def distcustom(self):
+        """
+        Returns the custom dist tag
+        """
+        return self._distcustom
+
+    @property
+    def distprefix(self):
+        """
+        Returns the dist_prefix, which is normally "el"
+        """
+        return self._distprefix
+
+    @property
+    def dist_tag(self):
+        """
+        Returns the dist tag
+        """
+        return f'.{self._distprefix}{self._release}'
+
+    @property
+    def source_clone_path(self):
+        """
+        Returns the source clone path
+        """
+        return f'/var/tmp/{self._package}-source'
+
+    @property
+    def dest_clone_path(self):
+        """
+        Returns the destination clone path
+        """
+        return f'/var/tmp/{self._package}-dest'
+
+    @property
+    def metadata_file(self):
+        """
+        Returns a metadata file path
+        """
+        return f'{self.source_clone_path}/.{self.package}.metadata'
+
+    @property
+    def sources_file(self):
+        """
+        Returns a sources metadata file path
+        """
+        return f'{self.source_clone_path}/sources'
+
+    @property
+    def preconv_names(self):
+        """
+        Returns if names are being preconverted
+        """
+        return self._preconv_names
+
+class GitHandler:
+    """
+    Git Handler class, specifically for handling repeatable actions among all
+    importer modules.
+    """

@@ -7,10 +7,12 @@ Importer accessories
 import os
 import sys
 import string
+from functools import cached_property
 from pv2.util import gitutil, rpmutil, generic
 from pv2.util import error as err
 from pv2.util import log as pvlog
 from . import Import
+#from . import ImportMetadata
 
 __all__ = ['GitImport']
 # todo: add in logging and replace print with log
@@ -36,13 +38,11 @@ class GitImport(Import):
             release: str,
             source_branch: str,
             upstream_lookaside: str,
-            scl_mode: bool = False,
-            scl_package: str = '',
-            alternate_spec_name: str = '',
+            alternate_spec_name=None,
             preconv_names: bool = False,
             dest_lookaside: str = '/var/www/html/sources',
             source_git_protocol: str = 'https',
-            dest_branch: str = '',
+            dest_branch=None,
             distprefix: str = 'el',
             distcustom=None,
             source_git_user: str = 'git',
@@ -63,80 +63,69 @@ class GitImport(Import):
         Set the org to something else if needed. Note that if you are using
         subgroups, do not start with a leading slash (e.g. some_group/rpms)
         """
-        self.__rpm = package
-        self.__release = release
-        full_source_git_host = source_git_host
-        if source_git_protocol == 'ssh':
-            full_source_git_host = f'{source_git_user}@{source_git_host}'
+        # I *should* be able to simplify this somehow
+        super().__init__(
+                _package=package,
+                _release=release,
+                _preconv_names=preconv_names,
+                _distprefix=distprefix,
+                _distcustom=distcustom,
+                _alternate_spec_name=alternate_spec_name,
+                _source_git_protocol=source_git_protocol,
+                _source_git_user=source_git_user,
+                _source_git_host=source_git_host,
+                _source_org=source_org,
+                _source_branch=source_branch,
+                _dest_git_host=dest_git_host,
+                _dest_git_user=dest_git_user,
+                _dest_org=dest_org,
+                _dest_branch=dest_branch,
+                _overwrite_tags=overwrite_tags,
+                _dest_lookaside=dest_lookaside,
+                _aws_access_key_id=aws_access_key_id,
+                _aws_access_key=aws_access_key,
+                _aws_bucket=aws_bucket,
+                _aws_region=aws_region,
+                _aws_use_ssl=aws_use_ssl,
+                _skip_lookaside=skip_lookaside,
+                _s3_upload=s3_upload,
+                _upstream_lookaside=upstream_lookaside,
+        )
+        self.__rpm_name = package
+        if self.source_git_protocol == 'ssh':
+            self._source_git_host = f'{self.source_git_user}@{self.source_git_host}'
 
-        package_name = package
         if preconv_names:
-            package_name = package.replace('+', 'plus')
+            self._package = self._package.replace('+', 'plus')
 
-        self.__source_git_url = f'{source_git_protocol}://{full_source_git_host}/{source_org}/{package_name}.git'
-        self.__source_clone_path = f'/var/tmp/{package_name}-source'
-        self.__source_git_spec = f'{self.__source_clone_path}/{package_name}.spec'
-        self.__dest_git_url = f'ssh://{dest_git_user}@{dest_git_host}/{dest_org}/{package_name}.git'
-        self.__dest_clone_path = f'/var/tmp/{package_name}-dest'
-        self.__dist_prefix = distprefix
-        self.__dist_tag = f'.{distprefix}{release}'
+        self.__source_git_spec = f'{self.source_clone_path}/{self.rpm_name}.spec'
 
-        # Branch logic
-        # We need to determine if the branch names should be different based on
-        # the input. Unfortunately we have to put up with modularity. If the
-        # source branch has "stream" in the name, it will be assumed that it
-        # will be a module. Since this should almost always be the case, we'll
-        # change the destination branch accordingly.
-        self.__source_branch = source_branch
-        self.__dest_branch = source_branch
+        self._dest_branch = source_branch
 
-        if len(dest_branch) > 0:
-            self.__dest_branch = dest_branch
+        if dest_branch:
+            self._dest_branch = dest_branch
 
         if "stream" in source_branch:
-            if len(dest_branch) > 0:
+            if dest_branch:
                 pvlog.logger.warning('Warning: This is a module import. Custom ' +
                                      'dest_branch will be ignored.')
             _stream_name = self.get_module_stream_name(source_branch)
             # This is supposed to get around "rhel-next" cases
             # It may still fail and this logic may need adjusting
             if _stream_name == "next":
-                _stream_name = f"rhel{self.__release}"
-            self.__dest_branch = f'{dest_branch}-stream-{_stream_name}'
-            _distmarker = self.__dist_tag.lstrip('.')
-            self.__dist_tag = f'.module+{_distmarker}+1010+deadbeef'
+                _stream_name = f"rhel{self.release_ver}"
+            self._dest_branch = f'{dest_branch}-stream-{_stream_name}'
+            _distmarker = self.dist_tag.lstrip('.')
+            self.dist_tag = f'.module+{_distmarker}+1010+deadbeef'
 
-        self.__dest_lookaside = dest_lookaside
-        self.__upstream_lookaside = upstream_lookaside
-        self.__upstream_lookaside_url = self.get_lookaside_template_path(upstream_lookaside)
-        self.__alternate_spec_name = alternate_spec_name
-        self.__preconv_names = preconv_names
-        self.__aws_access_key_id = aws_access_key_id
-        self.__aws_access_key = aws_access_key
-        self.__aws_bucket = aws_bucket
-        self.__aws_region = aws_region
-        self.__aws_use_ssl = aws_use_ssl
+        if self.distcustom:
+            self._dist_tag = f'.{self.distcustom}'
 
-        self.__distcustom = distcustom
+        if not self.upstream_lookaside:
+            raise err.ConfigurationError(f'{self.upstream_lookaside} is not valid.')
 
-        if distcustom:
-            self.__dist_tag = f'.{distcustom}'
-
-        if not self.__upstream_lookaside:
-            raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
-
-        if len(alternate_spec_name) > 0:
-            self.__source_git_spec = f'{self.__source_clone_path}/{alternate_spec_name}.spec'
-
-        # metadata files for sources
-        self.__metadata_file = f'{self.__source_clone_path}/.{package_name}.metadata'
-        self.__sources_file = f'{self.__source_clone_path}/sources'
-
-        self.__skip_lookaside = skip_lookaside
-        self.__overwrite_tags = overwrite_tags
-        self.__s3_upload = s3_upload
-
-        #self.__result_dict = None
+        if alternate_spec_name:
+            self.__source_git_spec = f'{self.source_clone_path}/{alternate_spec_name}.spec'
 
     # functions
     def __clone_source(self):
@@ -315,7 +304,7 @@ class GitImport(Import):
         Gets the actual spec file we need to work with
         """
         source_git_repo_spec = self.source_git_spec
-        if not os.path.exists(self.source_git_spec) and len(self.alternate_spec_name) == 0:
+        if not os.path.exists(self.source_git_spec) and not self.alternate_spec_name:
             source_git_repo_spec = self.find_spec_file(self.source_clone_path)
 
         return source_git_repo_spec
@@ -458,9 +447,11 @@ class GitImport(Import):
             if commit_res:
                 self.__push_changes(_dest, commit_ref)
 
-            result_dict['branch_commits'] = {self.dest_branch: commit_hash}
-            result_dict['branch_versions'] = {self.dest_branch: evr_dict}
-            result_dict['package_checksum'] = "Direct Git Import"
+            result_dict = self.set_import_metadata(
+                    commit_hash,
+                    evr_dict,
+                    'Direct Git Import'
+            )
 
         except (err.GitInitError, err.GitCommitError, err.ConfigurationError,
                 err.MissingValueError) as exc:
@@ -476,64 +467,27 @@ class GitImport(Import):
             pvlog.logger.info('Cleaning up')
             self.perform_cleanup([self.source_clone_path, self.dest_clone_path])
 
+        if fault > 0:
+            sys.exit(fault)
+
         return result_dict
 
-    @property
-    def release_ver(self):
-        """
-        Returns the release version of this import
-        """
-        return self.__release
-
-    @property
-    def rpm_name(self):
-        """
-        Returns the name of the RPM we're working with
-        """
-        return self.__rpm
-
-    @property
-    def rpm_name_replace(self):
-        """
-        Returns the name of the RPM we're working with
-        """
-        new_name = self.__rpm.replace('+', 'plus')
-        return new_name
-
-    @property
-    def alternate_spec_name(self):
-        """
-        Returns the actual name of the spec file if it's not the package name.
-        """
-        return self.__alternate_spec_name
-
-    @property
-    def source_branch(self):
-        """
-        Returns the starting branch
-        """
-        return self.__source_branch
-
-    @property
-    def dest_branch(self):
-        """
-        Returns the starting branch
-        """
-        return self.__dest_branch
-
-    @property
-    def source_git_url(self):
+    @cached_property
+    def source_git_url(self) -> str:
         """
         Returns the source git url
         """
-        return self.__source_git_url
-
-    @property
-    def source_clone_path(self):
+        if not all([self.source_git_protocol, self.source_git_host, self.source_org, self.package]):
+            raise ValueError("Cannot compute source_git_url - Missing values")
+        return f"{self.source_git_protocol}://{self.source_git_host}/{self.source_org}/{self.package}.git"
+    @cached_property
+    def dest_git_url(self) -> str:
         """
-        Returns the source clone path
+        Returns the dest git url
         """
-        return self.__source_clone_path
+        if not all([self.source_git_host, self.source_org, self.package]):
+            raise ValueError("Cannot compute source_git_url - Missing values")
+        return f"ssh://{self.dest_git_user}@{self.dest_git_host}/{self.dest_org}/{self.package}.git"
 
     @property
     def source_git_spec(self):
@@ -543,134 +497,15 @@ class GitImport(Import):
         return self.__source_git_spec
 
     @property
-    def dest_git_url(self):
+    def rpm_name(self):
         """
-        Returns the destination git url
+        Returns the name of the RPM we're working with (duplicate)
         """
-        return self.__dest_git_url
+        return self.__rpm_name
 
     @property
-    def dest_clone_path(self):
+    def rpm_name_replace(self):
         """
-        Returns the destination clone path
+        Returns the name of the RPM we're working with
         """
-        return self.__dest_clone_path
-
-    @property
-    def dist_tag(self):
-        """
-        Returns the dist tag
-        """
-        return self.__dist_tag
-
-    @property
-    def distcustom(self):
-        """
-        Returns the custom dist tag
-        """
-        return self.__distcustom
-
-    @property
-    def dist_prefix(self):
-        """
-        Returns the dist_prefix, which is normally "el"
-        """
-        return self.__dist_prefix
-
-    @property
-    def upstream_lookaside(self):
-        """
-        Returns upstream lookaside
-        """
-        return self.__upstream_lookaside
-
-    @property
-    def upstream_lookaside_url(self):
-        """
-        Returns upstream lookaside
-        """
-        return self.__upstream_lookaside_url
-
-    @property
-    def dest_lookaside(self):
-        """
-        Returns destination local lookaside
-        """
-        return self.__dest_lookaside
-
-    @property
-    def preconv_names(self):
-        """
-        Returns if names are being preconverted
-        """
-        return self.__preconv_names
-
-    @property
-    def metadata_file(self):
-        """
-        Returns a metadata file path
-        """
-        return self.__metadata_file
-
-    @property
-    def sources_file(self):
-        """
-        Returns a sources metadata file path
-        """
-        return self.__sources_file
-
-    @property
-    def skip_lookaside(self):
-        """
-        Skip lookaside
-        """
-        return self.__skip_lookaside
-
-    @property
-    def overwrite_tags(self):
-        """
-        Skip duplicate tags
-        """
-        return self.__overwrite_tags
-
-    @property
-    def s3_upload(self):
-        """
-        S3 upload
-        """
-        return self.__s3_upload
-
-    @property
-    def aws_access_key_id(self):
-        """
-        aws
-        """
-        return self.__aws_access_key_id
-
-    @property
-    def aws_access_key(self):
-        """
-        aws
-        """
-        return self.__aws_access_key
-
-    @property
-    def aws_bucket(self):
-        """
-        aws
-        """
-        return self.__aws_bucket
-
-    @property
-    def aws_region(self):
-        """
-        aws
-        """
-        return self.__aws_region
-
-    @property
-    def aws_use_ssl(self):
-        """
-        aws
-        """
-        return self.__aws_use_ssl
+        return self.__rpm_name.replace('+', 'plus')
