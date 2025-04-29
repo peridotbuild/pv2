@@ -89,9 +89,10 @@ def main():
                 aws_bucket=results.aws_bucket,
                 aws_region=results.aws_region,
                 aws_use_ssl=results.aws_use_ssl,
+                skip_lookaside=results.skip_lookaside_upload,
+                s3_upload=results.upload_to_s3,
         )
-        classy.pkg_import(skip_lookaside=results.skip_lookaside_upload,
-                          s3_upload=results.upload_to_s3)
+        classy.pkg_import()
     elif command == 'git':
         classy = importutil.GitImport(
                 package=results.name,
@@ -115,9 +116,10 @@ def main():
                 aws_bucket=results.aws_bucket,
                 aws_region=results.aws_region,
                 aws_use_ssl=results.aws_use_ssl,
+                skip_lookaside=results.skip_lookaside_upload,
+                s3_upload=results.upload_to_s3,
         )
-        classy.pkg_import(skip_lookaside=results.skip_lookaside_upload,
-                          s3_upload=results.upload_to_s3)
+        classy.pkg_import()
     else:
         print('Unknown command')
 
