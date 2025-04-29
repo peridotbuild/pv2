@@ -575,3 +575,10 @@ def rpmautocl(path_to_spec: str):
         pvlog.logger.info('No auto macros found nor processed')
 
     return True
+
+def check_obsolete_patch(rpm_spec: list[str]):
+    """
+    Checks for obsolete patch
+    """
+    pattern = re.compile(r"^%patch\d+")
+    return any(pattern.match(line) for line in rpm_spec)

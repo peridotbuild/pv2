@@ -119,7 +119,7 @@ class GitImport(Import):
                 _stream_name = f"rhel{self.release_ver}"
             self._dest_branch = f'{dest_branch}-stream-{_stream_name}'
             _distmarker = self.dist_tag.lstrip('.')
-            self.dist_tag = f'.module+{_distmarker}+1010+deadbeef'
+            self._dist_tag = f'.module+{_distmarker}+1010+deadbeef'
 
         if self.distcustom:
             self._dist_tag = f'.{self.distcustom}'
