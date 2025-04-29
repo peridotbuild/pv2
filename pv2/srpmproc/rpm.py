@@ -51,7 +51,7 @@ class RpmImport(Import):
             aws_region=None,
             aws_use_ssl: bool = False,
             skip_lookaside: bool = False,
-            skip_duplicate_tags: bool = False,
+            overwrite_tags: bool = False,
             skip_sources: bool = True,
             preconv_names: bool = False
     ):
@@ -61,7 +61,7 @@ class RpmImport(Import):
         self.__rpm = rpm
         self.__version = version
         self.__skip_lookaside = skip_lookaside
-        self.__skip_duplicate_tags = skip_duplicate_tags
+        self.__overwrite_tags = overwrite_tags
         self.__skip_sources = skip_sources
         self.__local_path = local_path
 
@@ -363,11 +363,18 @@ class RpmImport(Import):
         tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
         if patched:
             tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
+
+        if tag in repo.tags:
+            pvlog.logger.warning('!! Tag already exists !!')
+            if not self.overwrite_tags:
+                return False, str(repo.head.commit), None
+            pvlog.logger.warning('Overwriting tag...')
+
         gitutil.add_all(repo)
         verify = repo.is_dirty()
         if verify:
             gitutil.commit(repo, commit_msg)
-            ref = gitutil.tag(repo, tag, commit_msg)
+            ref = gitutil.tag(repo, tag, commit_msg, self.overwrite_tags)
             pvlog.logger.info('Tag: %s', tag)
             return True, str(repo.head.commit), ref
         pvlog.logger.info('No changes found.')
@@ -562,11 +569,11 @@ class RpmImport(Import):
         return self.__skip_lookaside
 
     @property
-    def skip_duplicate_tags(self):
+    def overwrite_tags(self):
         """
         Skip duplicate tags
         """
-        return self.__skip_duplicate_tags
+        return self.__overwrite_tags
 
     @property
     def skip_sources(self):
