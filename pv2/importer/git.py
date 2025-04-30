@@ -111,6 +111,7 @@ class GitImport(Import):
                 stream_name = f"rhel{self.release_ver}"
             _distmarker = self.default_dist_tag.lstrip('.')
             self.override_dist_tag(f'.module+{_distmarker}+1010+deadbeef')
+            self._dest_branch = f'{self._dest_branch}-stream-{stream_name}'
 
         if not upstream_lookaside:
             raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
