@@ -16,7 +16,6 @@ from . import GitHandler
 #from . import ImportMetadata
 
 __all__ = ['GitImport']
-# todo: add in logging and replace print with log
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=line-too-long
@@ -49,6 +48,7 @@ class GitImport(Import):
             source_git_user: str = 'git',
             dest_git_user: str = 'git',
             dest_org: str = 'rpms',
+            dest_git_protocol: str = 'ssh',
             aws_access_key_id=None,
             aws_access_key=None,
             aws_bucket=None,
@@ -81,6 +81,7 @@ class GitImport(Import):
                 _dest_git_user=dest_git_user,
                 _dest_org=dest_org,
                 _dest_branch=dest_branch,
+                _dest_git_protocol=dest_git_protocol,
                 _overwrite_tags=overwrite_tags,
                 _dest_lookaside=dest_lookaside,
                 _aws_access_key_id=aws_access_key_id,
@@ -236,6 +237,7 @@ class GitImport(Import):
 
         return packed_srpm, srpm_metadata
 
+    # duplicated between here and srpm.py for now
     def __upload_artifacts(self, sources):
         """
         Uploads artifacts
@@ -266,46 +268,6 @@ class GitImport(Import):
                                       sources, self.dest_lookaside)
         else:
             self.skip_local_import_lookaside(self.dest_clone_path, sources)
-
-    #def __commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
-    #    """
-    #    Commits and tags changes. Returns none if there's nothing to do.
-    #    """
-    #    # This is a temporary hack. There are cases that the .gitignore that's
-    #    # provided by upstream errorneouly keeps out certain sources, despite
-    #    # the fact that they were pushed before. We're killing off any
-    #    # .gitignore we find in the root.
-    #    dest_gitignore_file = f'{self.dest_clone_path}/.gitignore'
-    #    if os.path.exists(dest_gitignore_file):
-    #        os.remove(dest_gitignore_file)
-#
-#        tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
-#
-#        if tag in repo.tags:
-#            pvlog.logger.warning('!! Tag already exists !!')
-#            if not self.overwrite_tags:
-#                return False, str(repo.head.commit), None
-#            pvlog.logger.warning('Overwriting tag...')
-#
-#        pvlog.logger.info('Attempting to commit and tag...')
-#        if patched:
-#            tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
-#        gitutil.add_all(repo)
-#        verify = repo.is_dirty()
-#        if verify:
-#            gitutil.commit(repo, commit_msg)
-#            ref = gitutil.tag(repo, tag, commit_msg)
-#            pvlog.logger.info('Tag: %s', tag)
-#            return True, str(repo.head.commit), ref
-#        pvlog.logger.info('No changes found.')
-#        return False, str(repo.head.commit), None
-
-    #def __push_changes(self, repo, ref):
-    #    """
-    #    Pushes all changes to destination
-    #    """
-    #    pvlog.logger.info('Pushing to downstream repo')
-    #    gitutil.push(repo, ref)
 
     def pkg_import(self):
         """
