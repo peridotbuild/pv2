@@ -437,7 +437,7 @@ def add_rpm_key(file_name: str):
         raise err.RpmSigError(f'Unable to import signature: {exc}')
 
 # The spec file will be parsed by the rpm module
-def spec_parse(spec_file_path, dist: str = "%{nil}") -> list[str]:
+def spec_parse(spec_file_path, dist: str = "%{nil}", release: str = None) -> list[str]:
     """
     Parses the spec file given to it. Equivalent to rpmspec. A dist tag can be
     optionally defined, which will alter the result of the "Release" directive
@@ -451,7 +451,10 @@ def spec_parse(spec_file_path, dist: str = "%{nil}") -> list[str]:
                 --define "gometa %{nil}" \
                 --define "ldconfig_scriptlets(n:) %{nil}" \
                 --define "pesign %{nil}" \
-                --define "efi_has_alt_arch 0"
+                --define "efi_has_alt_arch 0" \
+                --define "rhel <value or %{nil}" \
+                --define "centos <value or %{nil}" \
+                --define "rocky <value or %{nil}"
     """
     try:
         spec_path = Path(spec_file_path)
@@ -461,6 +464,12 @@ def spec_parse(spec_file_path, dist: str = "%{nil}") -> list[str]:
         rpm.addMacro("_topdir", str(source_path))
         for m in rpmconst.RPMSPEC_DEFINITIONS.items():
             rpm.addMacro(m[0], m[1])
+
+        if release:
+            rpm.addMacro("rhel", release)
+            rpm.addMacro("centos", release)
+            rpm.addMacro("rocky", release)
+            rpm.addMacro("fedora", "%{nil}")
 
         s = rpm.spec(str(spec_path))
         return s.parsed.splitlines()

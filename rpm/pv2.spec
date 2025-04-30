@@ -1,5 +1,5 @@
 Name:           pv2
-Version:        0.14.1
+Version:        0.15.0
 Release:        1%{?dist}
 Summary:        pv2 importer module
 
@@ -86,5 +86,5 @@ This contains the srpmproc script for performing Rocky Linux-esque imports.
 %{_bindir}/srpmproc
 
 %changelog
-* Sun Apr 13 2025 Louis Abel <label@resf.org> - 0.14.1-1
+* Wed Apr 30 2025 Louis Abel <label@resf.org> - 0.15.0-1
 - Initial packaging of pv2
