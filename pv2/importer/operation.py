@@ -8,6 +8,7 @@ import os
 import sys
 import re
 import shutil
+from functools import cached_property
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 from pathlib import Path
@@ -31,9 +32,10 @@ class Import:
     """
     _package: Optional[str] = None
     _release: Optional[str] = None
-    _preconv_names: Optional[bool] = False
     _distprefix: str = 'el'
     _distcustom: Optional[str] = None
+    _dist_tag_override: Optional[str] = field(default=None, init=False)
+    _preconv_names: Optional[bool] = False
     _alternate_spec_name: Optional[str] = None
     _source_git_protocol: Optional[str] = 'https'
     _source_git_user: Optional[str] = 'git'
@@ -681,13 +683,31 @@ class Import:
         """
         return self._distprefix
 
+    ##########################################################################
+    # dist specific stuff
+
+    @cached_property
+    def default_dist_tag(self) -> str:
+        """
+        Default dist tag
+        """
+        return f".{self._distprefix}{self._release}"
+
     @property
-    def dist_tag(self):
+    def dist_tag(self) -> str:
         """
         Returns the dist tag
         """
-        return f'.{self._distprefix}{self._release}'
+        return self._dist_tag_override or self.default_dist_tag
 
+    def override_dist_tag(self, new_tag: str):
+        """
+        Resets the dist tag
+        """
+        self._dist_tag_override = new_tag
+
+    # End dist
+    ##########################################################################
     @property
     def source_clone_path(self):
         """

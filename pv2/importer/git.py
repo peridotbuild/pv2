@@ -109,24 +109,17 @@ class GitImport(Import):
         if dest_branch:
             self._dest_branch = dest_branch
 
-        if "stream" in source_branch:
-            if dest_branch:
-                pvlog.logger.warning('Warning: This is a module import. Custom ' +
-                                     'dest_branch will be ignored.')
-            _stream_name = self.get_module_stream_name(source_branch)
-            # This is supposed to get around "rhel-next" cases
-            # It may still fail and this logic may need adjusting
-            if _stream_name == "next":
-                _stream_name = f"rhel{self.release_ver}"
-            self._dest_branch = f'{dest_branch}-stream-{_stream_name}'
-            _distmarker = self.dist_tag.lstrip('.')
-            self._dist_tag = f'.module+{_distmarker}+1010+deadbeef'
+        if distcustom:
+            self.override_dist_tag(f'.{distcustom}')
+        elif source_branch and "stream" in source_branch:
+            stream_name = self.get_module_stream_name(source_branch)
+            if "next" in stream_name:
+                stream_name = f"rhel{self.release_ver}"
+            _distmarker = self.default_dist_tag.lstrip('.')
+            self.override_dist_tag(f'.module+{_distmarker}+1010+deadbeef')
 
-        if self.distcustom:
-            self._dist_tag = f'.{self.distcustom}'
-
-        if not self.upstream_lookaside:
-            raise err.ConfigurationError(f'{self.upstream_lookaside} is not valid.')
+        if not upstream_lookaside:
+            raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
 
         if alternate_spec_name:
             self.__source_git_spec = f'{self.source_clone_path}/{alternate_spec_name}.spec'
