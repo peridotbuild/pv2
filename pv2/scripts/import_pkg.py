@@ -80,7 +80,7 @@ def main():
                 dest_branch=results.dest_branch,
                 distprefix=results.distprefix,
                 distcustom=results.distcustom,
-                dest_git_user=results.gituser,
+                dest_git_user=results.dest_gituser,
                 dest_org=results.dest_gitorg,
                 dest_lookaside=results.dest_lookaside,
                 verify_signature=results.no_verify_signature,
