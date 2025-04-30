@@ -12,13 +12,13 @@ subparser.required = True
 rpm_parser = subparser.add_parser('rpm')
 git_parser = subparser.add_parser('git')
 
-rpm_parser.add_argument('--gituser', type=str, required=False, default='git')
-rpm_parser.add_argument('--githost', type=str, required=True)
-rpm_parser.add_argument('--branch', type=str, required=True)
+rpm_parser.add_argument('--dest-gituser', type=str, required=False, default='git')
+rpm_parser.add_argument('--dest-githost', type=str, required=True)
+rpm_parser.add_argument('--dest-branch', type=str, required=True)
 rpm_parser.add_argument('--srpm', type=str, required=True)
 rpm_parser.add_argument('--release', type=str, required=False, default='')
 rpm_parser.add_argument('--preconv-names', action='store_true', help='Convert + to plus first')
-rpm_parser.add_argument('--gitorg', type=str, required=False, default='rpms')
+rpm_parser.add_argument('--dest-gitorg', type=str, required=False, default='rpms')
 rpm_parser.add_argument('--distprefix', type=str, required=False, default='el')
 rpm_parser.add_argument('--distcustom', type=str, required=False)
 rpm_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
@@ -73,15 +73,15 @@ def main():
     """
     if command == 'rpm':
         classy = importutil.SrpmImport(
-                git_host=results.githost,
+                dest_git_host=results.dest_githost,
                 srpm_path=results.srpm,
                 release=results.release,
                 preconv_names=results.preconv_names,
-                branch=results.branch,
+                dest_branch=results.dest_branch,
                 distprefix=results.distprefix,
                 distcustom=results.distcustom,
-                git_user=results.gituser,
-                org=results.gitorg,
+                dest_git_user=results.gituser,
+                dest_org=results.dest_gitorg,
                 dest_lookaside=results.dest_lookaside,
                 verify_signature=results.no_verify_signature,
                 aws_access_key_id=results.aws_access_key_id,
