@@ -13,7 +13,6 @@ from pv2.util import error as err
 from pv2.util import log as pvlog
 from . import Import
 from . import GitHandler
-#from . import ImportMetadata
 
 __all__ = ['GitImport']
 
@@ -94,11 +93,6 @@ class GitImport(Import):
                 _upstream_lookaside=upstream_lookaside,
         )
         self.__rpm_name = package
-        if self.source_git_protocol == 'ssh':
-            self._source_git_host = f'{self.source_git_user}@{self.source_git_host}'
-        if self.dest_git_protocol == 'ssh':
-            self._dest_git_host = f'{self.dest_git_user}@{self.dest_git_host}'
-
         if preconv_names:
             self._package = self._package.replace('+', 'plus')
 
@@ -337,23 +331,6 @@ class GitImport(Import):
             sys.exit(fault)
 
         return result_dict
-
-    @cached_property
-    def source_git_url(self) -> str:
-        """
-        Returns the source git url
-        """
-        if not all([self.source_git_protocol, self.source_git_host, self.source_org, self.package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return f"{self.source_git_protocol}://{self.source_git_host}/{self.source_org}/{self.package}.git"
-    @cached_property
-    def dest_git_url(self) -> str:
-        """
-        Returns the dest git url
-        """
-        if not all([self.dest_git_host, self.dest_org, self.package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return f"{self.dest_git_protocol}://{self.dest_git_host}/{self.dest_org}/{self.package}.git"
 
     @property
     def source_git_spec(self):

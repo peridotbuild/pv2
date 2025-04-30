@@ -96,8 +96,8 @@ class SrpmImport(Import):
             if not self._release:
                 raise err.RpmInfoError(f'The dist tag does not conform to .{self.distprefix}X')
 
-        if self.distcustom:
-            self._dist_tag = f'.{self.distcustom}'
+        if distcustom:
+            self.override_dist_tag(f'.{distcustom}')
 
         self.git = GitHandler(self)
 
@@ -199,15 +199,6 @@ class SrpmImport(Import):
             sys.exit(fault)
 
         return result_dict
-
-    @cached_property
-    def dest_git_url(self) -> str:
-        """
-        Returns the dest git url
-        """
-        if not all([self.dest_git_host, self.dest_org, self.package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return f"{self.dest_git_protocol}://{self.dest_git_host}/{self.dest_org}/{self.package}.git"
 
     @cached_property
     def dest_branch(self) -> str:

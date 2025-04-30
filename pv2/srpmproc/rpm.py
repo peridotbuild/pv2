@@ -84,12 +84,6 @@ class RpmImport(Import):
                 _local_path=local_path,
         )
         self.__rpm_name = package
-
-        if self.source_git_protocol == 'ssh':
-            self._source_git_host = f'{self.source_git_user}@{self.source_git_host}'
-        if self.dest_git_protocol == 'ssh':
-            self._dest_git_host = f'{self.dest_git_user}@{self.dest_git_host}'
-
         if preconv_names:
             self._package = self._package.replace('+', 'plus')
 
@@ -236,7 +230,7 @@ class RpmImport(Import):
             # Get the NEVRA and make a new tag
             pvlog.logger.info('Getting package information')
             evr_dict = self.get_evr_dict(_spec, _dist)
-            evr = "{release}-{release}".format(**evr_dict)
+            evr = "{version}-{release}".format(**evr_dict)
             nvr = f"{self.rpm_name}-{evr}"
             msg = f'import {nvr}'
             pvlog.logger.info('Importing: %s', nvr)
@@ -251,7 +245,6 @@ class RpmImport(Import):
             )
             result_dict['branch_commits'] = {self.dest_branch: commit_hash}
             result_dict['branch_versions'] = {self.dest_branch: evr_dict}
-            #print(result_dict)
         except (err.ConfigurationError, err.FileNotFound,
                 err.TooManyFilesError, err.NotAppliedError,
                 err.PatchConfigTypeError, err.PatchConfigValueError,
@@ -282,32 +275,6 @@ class RpmImport(Import):
         raise NotImplementedError("This function is useless here. Use srpmproc_import instead.")
 
     # properties
-    @cached_property
-    def source_git_url(self) -> str:
-        """
-        Returns the source git url
-        """
-        if not all([self.source_git_protocol, self.source_git_host, self.source_org, self.package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return f"{self.source_git_protocol}://{self.source_git_host}/{self.source_org}/{self.package}.git"
-    @cached_property
-    def dest_git_url(self) -> str:
-        """
-        Returns the dest git url
-        """
-        if not all([self.dest_git_host, self.dest_org, self.package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return f"{self.dest_git_protocol}://{self.dest_git_host}/{self.dest_org}/{self.package}.git"
-
-    @cached_property
-    def dest_patch_git_url(self):
-        """
-        Returns the destination git url
-        """
-        if not all([self.dest_git_host, self.patch_org, self.package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return f"{self.dest_git_protocol}://{self.dest_git_host}/{self.patch_org}/{self.package}.git"
-
     @property
     def rpm_name(self):
         """

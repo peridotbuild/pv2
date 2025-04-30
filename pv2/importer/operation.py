@@ -444,6 +444,21 @@ class Import:
         """
         raise NotImplementedError("Imports can only be performed in subclasses")
 
+    def _build_git_url(
+            self,
+            protocol: str,
+            user: Optional[str],
+            host: str,
+            org: str,
+            package: str
+            ):
+        """
+        Builds a git url for the cached props
+        """
+        if protocol == "ssh":
+            return f"ssh://{user}@{host}/{org}/{package}.git"
+        return f"{protocol}://{host}/{org}/{package}.git"
+
     # Properties
     @property
     def alternate_spec_name(self):
@@ -452,7 +467,7 @@ class Import:
         """
         return self._alternate_spec_name
 
-    @property
+    @cached_property
     def source_git_host(self):
         """
         Returns the git host
@@ -501,6 +516,21 @@ class Import:
         """
         return self._source_branch_suffix
 
+    @cached_property
+    def source_git_url(self) -> str:
+        """
+        Returns the source git url
+        """
+        if not all([self._source_git_protocol, self._source_git_host, self._source_org, self._package]):
+            raise ValueError("Cannot compute source_git_url - Missing values")
+        return self._build_git_url(
+                protocol=self._source_git_protocol,
+                user=self._source_git_user,
+                host=self._source_git_host,
+                org=self._source_org,
+                package=self._package
+        )
+
     @property
     def package(self):
         """
@@ -515,7 +545,7 @@ class Import:
         """
         return self._release
 
-    @property
+    @cached_property
     def dest_git_host(self):
         """
         Returns the git host
@@ -570,6 +600,36 @@ class Import:
         Returns destination local lookaside
         """
         return self._dest_lookaside
+
+    @cached_property
+    def dest_git_url(self) -> str:
+        """
+        Returns the dest git url
+        """
+        if not all([self._dest_git_protocol, self._dest_git_host, self._dest_org, self._package]):
+            raise ValueError("Cannot compute dest_git_url - Missing values")
+        return self._build_git_url(
+                protocol=self._dest_git_protocol,
+                user=self._dest_git_user,
+                host=self._dest_git_host,
+                org=self._dest_org,
+                package=self._package
+        )
+
+    @cached_property
+    def dest_patch_git_url(self):
+        """
+        Returns the destination git url
+        """
+        if not all([self._dest_git_protocol, self._dest_git_host, self._patch_org, self._package]):
+            raise ValueError("Cannot compute dest_git_url - Missing values")
+        return self._build_git_url(
+                protocol=self._dest_git_protocol,
+                user=self._dest_git_user,
+                host=self._dest_git_host,
+                org=self._patch_org,
+                package=self._package
+        )
 
     @property
     def patch_org(self):
