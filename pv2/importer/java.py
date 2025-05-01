@@ -120,22 +120,7 @@ class JavaPortableImport(Import):
         return result_dict
 
     @cached_property
-    def java_git_url(self) -> str:
-        """
-        Returns the source git url for java
-        """
-        if not all([self._source_git_protocol, self._source_git_host, self._source_org, self._package]):
-            raise ValueError("Cannot compute source_git_url - Missing values")
-        return self._build_git_url(
-                protocol=self._source_git_protocol,
-                user=self._source_git_user,
-                host=self._source_git_host,
-                org=self._source_org,
-                package=self._package
-        )
-
-    @cached_property
-    def portable_git_url(self) -> str:
+    def dest_git_url(self) -> str:
         """
         Returns the dest git url for java portable
         """
