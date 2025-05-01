@@ -226,10 +226,11 @@ class RpmImport(Import):
             self.copy_everything(_source.working_dir, _dest.working_dir)
             patched = self.__perform_patch(_patch, _main_ref, _branch_ref)
             checksum_from_pkg = self.__get_checksum_from_dest(_dest.working_dir)
+            _dest_spec = self.find_spec_file(_dest.working_dir)
 
             # Get the NEVRA and make a new tag
             pvlog.logger.info('Getting package information')
-            evr_dict = self.get_evr_dict(_spec, _dist)
+            evr_dict = self.get_evr_dict(_dest_spec, _dist)
             evr = "{version}-{release}".format(**evr_dict)
             nvr = f"{self.rpm_name}-{evr}"
             msg = f'import {nvr}'
@@ -243,8 +244,6 @@ class RpmImport(Import):
                     evr_dict,
                     checksum_from_pkg
             )
-            result_dict['branch_commits'] = {self.dest_branch: commit_hash}
-            result_dict['branch_versions'] = {self.dest_branch: evr_dict}
         except (err.ConfigurationError, err.FileNotFound,
                 err.TooManyFilesError, err.NotAppliedError,
                 err.PatchConfigTypeError, err.PatchConfigValueError,

@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description="Java Portable Importer")
 parser.add_argument('--name', type=str, required=True)
 parser.add_argument('--githost', type=str, required=True)
 parser.add_argument('--gitorg', type=str, required=False, default='rpms')
+parser.add_argument('--gituser', type=str, required=False, default='git')
 parser.add_argument('--branch', type=str, required=False, default='')
 results = parser.parse_args()
 
@@ -19,10 +20,11 @@ def main():
     Run the import
     """
     classy = importutil.JavaPortableImport(
-            results.name,
-            git_host=results.giturl,
-            org=results.gitorg,
-            branch=results.branch,
+            package=results.name,
+            source_git_host=results.githost,
+            source_org=results.gitorg,
+            source_branch=results.branch,
+            source_git_user=results.gituser,
     )
 
     classy.pkg_import()
