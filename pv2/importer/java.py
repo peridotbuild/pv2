@@ -29,7 +29,8 @@ class JavaPortableImport(Import):
             source_branch: str,
             source_git_user: str = 'git',
             source_org: str = 'rpms',
-            source_git_protocol: str = 'ssh'
+            source_git_protocol: str = 'ssh',
+            overwrite_tags: bool = False
     ):
         """
         Init the class.
@@ -46,6 +47,7 @@ class JavaPortableImport(Import):
                 _dest_git_host=source_git_host,
                 _dest_org=source_org,
                 _dest_branch=source_branch,
+                _overwrite_tags=overwrite_tags,
         )
         self.git = GitHandler(self)
         self.__rpm_name = package
@@ -71,6 +73,9 @@ class JavaPortableImport(Import):
             _source, _source_tag, _spec = self.git.clone_source()
             _dest = self.git.clone_dest()
             _dist = self.dist_tag
+
+            if _source_tag:
+                _dist = self.parse_git_tag(str(_source_tag))[-1]
 
             self.remove_everything(_dest.working_dir)
             self.copy_everything(_source.working_dir, _dest.working_dir)

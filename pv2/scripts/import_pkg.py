@@ -32,6 +32,7 @@ rpm_parser.add_argument('--aws-access-key', type=str, required=False, default=No
 rpm_parser.add_argument('--aws-bucket', type=str, required=False, default=None)
 rpm_parser.add_argument('--aws-use-ssl', type=str, required=False, default=False)
 rpm_parser.add_argument('--aws-region', type=str, required=False, default=None)
+rpm_parser.add_argument('--overwrite-tag', action='store_true')
 
 git_parser.add_argument('--name', type=str, required=True)
 git_parser.add_argument('--source-gituser', type=str, required=False, default='git')
@@ -63,6 +64,7 @@ git_parser.add_argument('--aws-access-key', type=str, required=False, default=No
 git_parser.add_argument('--aws-bucket', type=str, required=False, default=None)
 git_parser.add_argument('--aws-use-ssl', type=str, required=False, default=False)
 git_parser.add_argument('--aws-region', type=str, required=False, default=None)
+git_parser.add_argument('--overwrite-tag', action='store_true')
 
 results = parser.parse_args()
 command = parser.parse_args().cmd
@@ -91,6 +93,7 @@ def main():
                 aws_use_ssl=results.aws_use_ssl,
                 skip_lookaside=results.skip_lookaside_upload,
                 s3_upload=results.upload_to_s3,
+                overwrite_tags=results.overwrite_tag,
         )
         classy.pkg_import()
     elif command == 'git':
@@ -118,6 +121,7 @@ def main():
                 aws_use_ssl=results.aws_use_ssl,
                 skip_lookaside=results.skip_lookaside_upload,
                 s3_upload=results.upload_to_s3,
+                overwrite_tags=results.overwrite_tag,
         )
         classy.pkg_import()
     else:

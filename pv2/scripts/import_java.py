@@ -13,6 +13,7 @@ parser.add_argument('--githost', type=str, required=True)
 parser.add_argument('--gitorg', type=str, required=False, default='rpms')
 parser.add_argument('--gituser', type=str, required=False, default='git')
 parser.add_argument('--branch', type=str, required=False, default='')
+parser.add_argument('--overwrite-tag', action='store_true')
 results = parser.parse_args()
 
 def main():
