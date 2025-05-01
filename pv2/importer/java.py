@@ -4,11 +4,10 @@
 Importer accessories
 """
 
-import os
 import sys
 import shutil
+from pathlib import Path
 from functools import cached_property
-from pv2.util import gitutil, fileutil
 from pv2.util import error as err
 from pv2.util import log as pvlog
 from . import Import
@@ -51,19 +50,16 @@ class JavaPortableImport(Import):
         self.git = GitHandler(self)
         self.__rpm_name = package
 
-    def __copy_java_elements(self, source, dest):
+    def __copy_java_elements(self, dest):
         """
         Copy the necessary elements of java
         """
         pvlog.logger.info('Copying metadata')
-        shutil.copy2(f'{source}/.{self.java_name}.metadata',
-                     f'{dest}/.{self.java_name_portable}.metadata')
-        pvlog.logger.info('Copying SOURCE tree')
-        shutil.rmtree(f'{dest}/SOURCES')
-        shutil.copytree(f'{source}/SOURCES', f'{dest}/SOURCES')
-        pvlog.logger.info('Copying portable spec file')
         shutil.copy2(f'{dest}/SOURCES/{self.java_name_portable}.specfile',
                      f'{dest}/SPECS/{self.java_name_portable}.spec')
+        path = Path(f'{dest}/SPECS/{self.java_name}.spec')
+        if path.is_file() or path.is_symlink():
+            path.unlink()
 
     def pkg_import(self):
         """
@@ -77,7 +73,8 @@ class JavaPortableImport(Import):
             _dist = self.dist_tag
 
             self.remove_everything(_dest.working_dir)
-            self.__copy_java_elements(_source.working_dir, _dest.working_dir)
+            self.copy_everything(_source.working_dir, _dest.working_dir)
+            self.__copy_java_elements(_dest.working_dir)
             self.generate_filesum(_dest.working_dir, self.java_name_portable,
                                   "Direct Java Portable Translation")
             _dest_spec = self.find_spec_file(_dest.working_dir)
