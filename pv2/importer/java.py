@@ -149,6 +149,13 @@ class JavaPortableImport(Import):
         )
 
     @property
+    def rpm_name(self):
+        """
+        Returns the name of the java we're working with
+        """
+        return self._package
+
+    @property
     def java_name(self):
         """
         Returns the name of the java we're working with
