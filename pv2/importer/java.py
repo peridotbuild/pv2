@@ -49,6 +49,7 @@ class JavaPortableImport(Import):
                 _dest_branch=source_branch,
         )
         self.git = GitHandler(self)
+        self.__rpm_name = package
 
     def __copy_java_elements(self, source, dest):
         """
@@ -153,7 +154,14 @@ class JavaPortableImport(Import):
         """
         Returns the name of the java we're working with
         """
-        return self._package
+        return self.__rpm_name
+
+    @property
+    def rpm_name_replace(self):
+        """
+        Returns the name of the java we're working with
+        """
+        return self.__rpm_name.replace('+', 'plus')
 
     @property
     def java_name(self):
