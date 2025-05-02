@@ -9,10 +9,12 @@ import sys
 import re
 import shutil
 import datetime
+from functools import cached_property
 from pv2.util import gitutil, generic
 from pv2.util import error as err
 from pv2.util import log as pvlog
 from . import Import
+from . import GitHandler
 
 __all__ = ['ModuleImport']
 # todo: add in logging and replace print with log
@@ -33,131 +35,111 @@ class ModuleImport(Import):
             source_org: str,
             dest_git_host: str,
             release: str,
-            branch: str,
+            source_branch: str,
             source_git_protocol: str = 'https',
             dest_branch: str = '',
             distprefix: str = 'el',
-            git_user: str = 'git',
-            dest_org: str = 'modules'
+            distcustom=None,
+            source_git_user: str = 'git',
+            dest_git_user: str = 'git',
+            dest_org: str = 'modules',
+            dest_git_protocol: str = 'ssh',
+            overwrite_tags: bool = False,
     ):
         """
         Init the class
         """
         #if not HAS_GI:
         #    raise err.GenericError('This class cannot be loaded due to missing modules.')
-
+        super().__init__(
+                _package=module,
+                _release=release,
+                _distprefix=distprefix,
+                _distcustom=distcustom,
+                _source_git_protocol=source_git_protocol,
+                _source_git_user=source_git_user,
+                _source_git_host=source_git_host,
+                _source_org=source_org,
+                _source_branch=source_branch,
+                _dest_git_host=dest_git_host,
+                _dest_git_user=dest_git_user,
+                _dest_org=dest_org,
+                _dest_branch=dest_branch,
+                _dest_git_protocol=dest_git_protocol,
+                _overwrite_tags=overwrite_tags,
+        )
         self.__module = module
-        self.__release = release
-        # pylint: disable=line-too-long
-        self.__source_git_url = f'{source_git_protocol}://{source_git_host}/{source_org}/{module}.git'
-        self.__git_url = f'ssh://{git_user}@{dest_git_host}/{dest_org}/{module}.git'
-        self.__dist_prefix = distprefix
-        self.__dist_tag = f'.{distprefix}{release}'
-        self.__branch = branch
-        self.__dest_branch = branch
-        self.__current_time = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        self.__datestamp = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
-        if len(dest_branch) > 0:
-            self.__dest_branch = dest_branch
+        if dest_branch:
+            self._dest_branch = dest_branch
 
-        if "stream" not in self.__branch:
+        if "stream" not in source_branch:
             raise err.ConfigurationError('Source branch does not contain stream')
 
-        _module_stream_name = self.get_module_stream_name(branch)
-        # gets around "rhel-next"
-        if _module_stream_name == "next":
-            _module_stream_name = f"rhel{release}"
-        self.__stream_name = _module_stream_name
+        stream_name = self.get_module_stream_name(source_branch)
+        if "next" in stream_name:
+            stream_name = f"rhel{release}"
+        self._dest_branch = f'{self._dest_branch}-stream-{stream_name}'
+        self.__stream_name = stream_name
+        self.__module_version = self.get_module_stream_os(release, source_branch, self.__datestamp)
+        self.__modulemd_file = f'{self.source_clone_path}/{self.module_name}.yaml'
+        self.__context = 'deadbeef'
+        self.git = GitHandler(self)
 
-    def module_import(self):
+    def clone_source(self):
         """
-        Actually perform the import.
+        Clone source repo
+
+        Check for a spec file and metadata file. Die early if spec isn't found
+        at least. Warn if there's no metadata.
         """
+        pvlog.logger.info('Checking if source repo exists: %s', self.rpm_name)
         try:
             check_source_repo = gitutil.lsremote(self.source_git_url)
-        except err.GitInitError as exc:
-            pvlog.logger.exception(exc)
-            pvlog.logger.error('Upstream git repo does not exist.')
+        except err.GitInitError:
+            pvlog.logger.exception(
+                    'Git repo for %s does not exist at the source',
+                    self.rpm_name)
             sys.exit(2)
         except Exception as exc:
-            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
             sys.exit(2)
 
+        pvlog.logger.info('Checking if source branch exists: %s',
+                          self.source_branch)
         try:
-            check_dest_repo = gitutil.lsremote(self.dest_git_url)
-        except err.GitInitError as exc:
-            pvlog.logger.exception(exc)
-            check_dest_repo = None
-        except Exception as exc:
-            pvlog.logger.warning('An unexpected issue occured: %s', exc)
+            gitutil.ref_check(check_source_repo, self.source_branch)
+        except err.GitCheckoutError as exc:
+            pvlog.logger.error('Branch does not exist: %s', exc)
             sys.exit(2)
 
-        source_git_repo_path = f'/var/tmp/{self.module_name}-source'
-        dest_git_repo_path = f'/var/tmp/{self.module_name}'
-        modulemd_file = f'{source_git_repo_path}/{self.module_name}.yaml'
-        metadata_file = f'{dest_git_repo_path}/.{self.module_name}.metadata'
-        source_branch = self.source_branch
-        dest_branch = self.dest_branch
-        _dist_tag = self.dist_tag
-        stream_name = self.stream_name
-        repo_tags = []
-
-        dest_branch = f'{dest_branch}-stream-{stream_name}'
-        module_version = self.get_module_stream_os(self.release, source_branch, self.datestamp)
-        nsvc = f'{self.module_name}-{stream_name}-{module_version}.deadbeef'
-        import_tag = generic.safe_encoding(
-                f'imports/{dest_branch}/{nsvc}'
-        )
-        commit_msg = f'import {nsvc}'
-
-        pvlog.logger.info('Cloning upstream: %s', self.module_name)
+        pvlog.logger.info('Cloning upstream: %s (%s)', self.rpm_name, self.source_branch)
         source_repo = gitutil.clone(
                 git_url_path=self.source_git_url,
-                repo_name=self.module_name,
-                to_path=source_git_repo_path,
-                branch=source_branch
+                repo_name=self.rpm_name_replace,
+                to_path=self.source_clone_path,
+                branch=self.source_branch,
+                single_branch=True
         )
-
-        if check_dest_repo:
-            ref_check = f'refs/heads/{dest_branch}' in check_dest_repo
-            pvlog.logger.info('Cloning: %s', self.module_name)
-            if ref_check:
-                dest_repo = gitutil.clone(
-                        git_url_path=self.dest_git_url,
-                        repo_name=self.module_name,
-                        to_path=dest_git_repo_path,
-                        branch=dest_branch
-                )
-            else:
-                dest_repo = gitutil.clone(
-                        git_url_path=self.dest_git_url,
-                        repo_name=self.module_name,
-                        to_path=dest_git_repo_path,
-                        branch=None
-                )
-                gitutil.checkout(dest_repo, branch=dest_branch, orphan=True)
-            self.remove_everything(dest_repo.working_dir)
-            for tag_name in dest_repo.tags:
-                repo_tags.append(tag_name.name)
+        current_source_tag = gitutil.get_current_tag(source_repo)
+        if not current_source_tag:
+            pvlog.logger.warning('No tag found')
         else:
-            pvlog.logger.warning('Repo may not exist or is private. Try to import anyway.')
-            dest_repo = gitutil.init(
-                    git_url_path=self.dest_git_url,
-                    repo_name=self.module_name,
-                    to_path=dest_git_repo_path,
-                    branch=dest_branch
-            )
+            pvlog.logger.info('Tag: %s', str(current_source_tag))
 
-        # We'd normally look for similar tags. But the date time is always
-        # going to change, so we're skipping that part.
+        return source_repo, current_source_tag
 
-        if not os.path.exists(f'{dest_git_repo_path}/SOURCES'):
+    def __copy_data(self):
+        """
+        Copy module data
+        """
+        if not os.path.exists(f'{self.dest_clone_path}/SOURCES'):
             try:
-                os.makedirs(f'{dest_git_repo_path}/SOURCES')
+                os.makedirs(f'{self.dest_clone_path}/SOURCES')
             except Exception as exc:
-                raise err.GenericError(f'Directory could not be created: {exc}')
 
-        # We eventually want to do it this way.
+                raise err.GenericError(f'Directory could not be created: {exc}')
         #if Version(Modulemd.get_version()) < Version("2.11"):
         #    source_modulemd = Modulemd.ModuleStream.read_file(
         #            modulemd_file,
@@ -173,34 +155,67 @@ class ModuleImport(Import):
         #    change = source_modulemd.get_rpm_component(component)
         #    change.set_ref(dest_branch)
 
-        with open(modulemd_file, 'r') as module_yaml:
+        with open(self.modulemd_file, 'r') as module_yaml:
             content = module_yaml.read()
-            content_new = re.sub(r'ref:\s+(.*)', f'ref: {dest_branch}', content)
+            content_new = re.sub(r'ref:\s+(.*)', f'ref: {self.dest_branch}', content)
             module_yaml.close()
 
         # Write to the root
-        with open(f'{dest_git_repo_path}/{self.module_name}.yaml', 'w') as module_yaml:
+        with open(f'{self.dest_clone_path}/{self.module_name}.yaml', 'w') as module_yaml:
             module_yaml.write(content_new)
             module_yaml.close()
 
         # Write to the sources. It needs to be the original content.
-        shutil.copy(modulemd_file, f'{dest_git_repo_path}/SOURCES/modulemd.src.txt')
+        shutil.copy(self.modulemd_file, f'{self.dest_clone_path}/SOURCES/modulemd.src.txt')
         #with open(f'{dest_git_repo_path}/SOURCES/modulemd.src.txt', 'w') as module_yaml:
         #    module_yaml.write(content_new)
         #    module_yaml.close()
 
-        self.generate_metadata(dest_git_repo_path, self.module_name, {})
-        gitutil.add_all(dest_repo)
-        verify = dest_repo.is_dirty()
-        if verify:
-            gitutil.commit(dest_repo, commit_msg)
-            ref = gitutil.tag(dest_repo, import_tag, commit_msg)
-            gitutil.push(dest_repo, ref=ref)
-            self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
-            return True
-        pvlog.logger.info('Nothing to push')
-        self.perform_cleanup([source_git_repo_path, dest_git_repo_path])
-        return False
+    def module_import(self):
+        """
+        Actually perform the import.
+        """
+        fault = 0
+        result_dict = {}
+        try:
+            _source, _source_tag = self.clone_source()
+            _dest = self.git.clone_dest()
+
+            self.remove_everything(_dest.working_dir)
+            self.__copy_data()
+            self.generate_metadata(_dest.working_dir, self.module_name, {})
+            msg = f'import {self.nsvc}'
+            pvlog.logger.info('Importing: %s', self.nsvc)
+            commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, self.nsvc, False)
+
+            if commit_res:
+                self.git.push_changes(_dest, commit_ref)
+
+            result_dict = self.set_import_metadata(
+                    commit_hash,
+                    self.nsvc_dict,
+                    'Direct Git Import'
+            )
+
+        except (err.GitInitError, err.GitCommitError, err.ConfigurationError,
+                err.MissingValueError) as exc:
+            pvlog.logger.error('%s', exc)
+            fault = exc.fault_code
+        except Exception as exc:
+            pvlog.logger.error('An unexpected error occurred.')
+            pvlog.logger.exception('%s', exc)
+            fault = 2
+        else:
+            pvlog.logger.info('Completed')
+        finally:
+            pvlog.logger.info('Cleaning up')
+            self.perform_cleanup([self.source_clone_path, self.dest_clone_path])
+
+        if fault > 0:
+            sys.exit(fault)
+
+        print(result_dict)
+        return result_dict
 
     @property
     def module_name(self):
@@ -209,47 +224,41 @@ class ModuleImport(Import):
         """
         return self.__module
 
+    # Otherwise source clone fails.
     @property
-    def source_branch(self):
+    def rpm_name(self):
         """
-        Returns the starting branch
+        Returns the module name
         """
-        return self.__branch
+        return self.__module
 
     @property
-    def dest_branch(self):
+    def rpm_name_replace(self):
         """
-        Returns the starting branch
+        Returns the name of the RPM we're working with
         """
-        return self.__dest_branch
+        return self.__module.replace('+', 'plus')
 
     @property
-    def source_git_url(self):
+    def module_version(self):
         """
-        Returns the source git url
+        Returns the module name
         """
-        return self.__source_git_url
+        return self.__module_version
 
     @property
-    def dest_git_url(self):
+    def modulemd_file(self):
         """
-        Returns the destination git url
+        Returns the module name
         """
-        return self.__git_url
+        return self.__modulemd_file
 
-    @property
-    def dist_tag(self):
-        """
-        Returns the dist tag
-        """
-        return self.__dist_tag
-
-    @property
+    @cached_property
     def datestamp(self):
         """
         Returns a date time stamp
         """
-        return self.__current_time
+        return self.__datestamp
 
     @property
     def stream_name(self):
@@ -259,8 +268,22 @@ class ModuleImport(Import):
         return self.__stream_name
 
     @property
-    def release(self):
+    def context(self):
         """
-        Returns the release
+        Returns the context
         """
-        return self.__release
+        return self.__context
+
+    @cached_property
+    def nsvc(self):
+        """
+        Returns the NSVC
+        """
+        return f'{self.__module}-{self.__stream_name}-{self.__module_version}.{self.__context}'
+
+    @cached_property
+    def nsvc_dict(self):
+        """
+        Returns NSVC as a dict (without the name)
+        """
+        return {"stream": self.__stream_name, "version": self.__module_version, "context": self.__context}

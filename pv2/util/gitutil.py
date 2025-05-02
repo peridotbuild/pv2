@@ -105,6 +105,18 @@ def commit(repo, message: str):
     except gitexc.CommandError as exc:
         raise err.GitCommitError('Unable to create commit') from exc
 
+def commit_empty(repo, message: str):
+    """
+    create a commit message (no tag) allowing empty changes
+    """
+    try:
+        cmd = ['git', 'commit', '-m', message, '--allow-empty']
+        idx = repo.git
+        idx.execute(cmd)
+    # pylint: disable=no-member
+    except gitexc.CommandError as exc:
+        raise err.GitCommitError('Unable to create commit') from exc
+
 def init(
         git_url_path: str,
         repo_name: str,
