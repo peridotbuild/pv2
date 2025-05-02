@@ -203,10 +203,10 @@ Example structure is below.
     └── ex.sh
 ```
 
-This structure contains a `main.yml`, which will be called no matter the branch
-that is imported and `r9.yml`, which will be called after `main.yml` if the `r9`
-branch is being imported. All applicable scripts and files are in their
-designated directories.
+This structure contains a `main.yml` and an `r9.yml`. `main.yml` will be used as
+a patch configuration no matter the branch and `r9.yml` will be called
+afterwards if the destination branch is `r9`. All applicable scripts and files
+are in their designated directories.
 
 [^1]: 
     If you are coming from the original srpmproc and wish to have this
