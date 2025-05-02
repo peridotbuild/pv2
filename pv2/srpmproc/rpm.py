@@ -5,10 +5,9 @@ rpm operations
 """
 
 import sys
-from functools import cached_property
 from pathlib import Path
 from pv2.util import log as pvlog
-from pv2.util import gitutil, rpmutil, fileutil, generic
+from pv2.util import gitutil, rpmutil, fileutil, generic, decorators
 from pv2.util import error as err
 #from pv2.util.constants import RpmConstants as rpmconst
 from pv2.importer.operation import Import, GitHandler
@@ -267,11 +266,13 @@ class RpmImport(Import):
         # return data
         return result_dict
 
-    def pkg_import(self, skip_lookaside: bool = False, s3_upload: bool = False):
+    # pylint: disable=unused-argument
+    @decorators.alias_for("srpmproc_import", warn=True)
+    def pkg_import(self, *args, **kwargs):
         """
         This function is useless here.
         """
-        raise NotImplementedError("This function is useless here. Use srpmproc_import instead.")
+        return NotImplemented
 
     # properties
     @property

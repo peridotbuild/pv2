@@ -12,7 +12,9 @@ Utility functions for uploading artifacts
 import os
 import sys
 import threading
+import shutil
 import pv2.util.error as err
+import pv2.util.log as pvlog
 try:
     import boto3
     import botocore
@@ -123,3 +125,11 @@ def upload_to_local(
     """
     local 'upload'
     """
+    pvlog.logger.info('Copying %s to %s', input_file, upload_path)
+    try:
+        shutil.copy2(input_file, upload_path)
+    except shutil.Error as exc:
+        pvlog.logger.error('There was an issue copying the data')
+        for src, dst, msg in exc.args[0]:
+            pvlog.logger.error('%s -> %s: %s', src, dst, msg)
+        raise err.FileOperationError('File operation error')
