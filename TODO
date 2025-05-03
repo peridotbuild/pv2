@@ -11,14 +11,11 @@ Rationale: os.path is quite clunky. A precursory look at pathlib tells me:
 Only downside is it may not handle s3 URL's very well, but that may or may not
 be a problem in the future when the support is added.
 
-# April 21, 2025
-The srpmproc importer should provide an option to disable strict-ness and
-look for *all* branches of a given version. This option cannot work when it the
-user is using a custom branch name (source or destination).
-
 # April 24, 2025
 The importer and srpmproc modules do a lot of "raises", they should be using try
 and excepts where possible to make things more consistent.
+
+Most of this should be addressed already.
 
 # April 25, 2025
 The srpmproc editor needs to support an "AddLines" function, though this should
