@@ -15,16 +15,24 @@ For a list of things that we want to look into, check the `TODO` list.
   Stream)
 * srpmproc utility - A complete rewrite of srpmproc in python
 
-### srpmproc go to python transition
+### srpmproc golang to python transition
 
-`srpmproc`, as written in go, is feature complete, but comes with some problems
-that either cannot be fixed properly due to features being bolted on after the
-fact or make it difficult for both the average user, a developer in a Rocky
-Linux SIG, or even a Rocky Linux maintainer to understand and use "correctly"
-and efficiently. While the tool works and does its job well, the issues that
-hold it back is what forced the original author to request that it be rewritten
-in python, which can be seen to be a more approachable language that some
-contributors or users will likely find easier to work with.
+`srpmproc`, as written in go, is feature complete, but comes with some problems.
+Some of these problems are:
+
+* Issues that cannot be fixed properly due to features being bolted on after the
+  fact
+* Lack of testing of the components of the tool to ensure bugs have not surfaced
+* Command line options and variables that do not mean what they're actually
+  called, partly due to the above
+* Difficulty in "correct" and "efficient" usage plus understanding by the average
+  user, a developer in Rocky Linux SIGs or general contributors, or even a Rocky
+  Linux maintainer
+
+While the tool works and does its job well, the issues above hold it back. As a
+result, this forced the original author to request that it be rewritten in
+python, which can be seen as a more approachable language that some contributors
+or users will likely find easier to work with or understand.
 
 It has essentially been rewritten to address the following:
 
@@ -75,8 +83,8 @@ Current scripts can be found in `pv2/scripts`.
 
 ## Packaging
 
-At this time it is not packaged into an RPM but will eventually be placed
-into SIG/Core repositories for general consumption.
+At this time it is not packaged into an RPM but will in the future and be placed
+into a SIG/Core repositories for general consumption.
 
 ## Contributing
 
