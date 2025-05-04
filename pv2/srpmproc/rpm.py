@@ -7,7 +7,7 @@ rpm operations
 import sys
 from pathlib import Path
 from pv2.util import log as pvlog
-from pv2.util import gitutil, rpmutil, fileutil, generic, decorators
+from pv2.util import gitutil, fileutil, decorators
 from pv2.util import error as err
 #from pv2.util.constants import RpmConstants as rpmconst
 from pv2.importer.operation import Import, GitHandler
@@ -15,9 +15,8 @@ from .editor import Config
 
 __all__ = ['RpmImport']
 
-# pylint: disable=too-many-arguments,too-many-locals,too-many-positional-arguments
-# pylint: disable=line-too-long,too-many-public-methods,too-many-instance-attributes
-# pylint: disable=broad-exception-caught,too-many-branches
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+# pylint: disable=line-too-long,broad-exception-caught,unspecified-encoding
 
 class RpmImport(Import):
     """
@@ -73,6 +72,7 @@ class RpmImport(Import):
                 _dest_git_user=dest_git_user,
                 _dest_org=dest_org,
                 _dest_branch=dest_branch,
+                _dest_git_protocol=dest_git_protocol,
                 _patch_org=patch_org,
                 _overwrite_tags=overwrite_tags,
                 _aws_access_key_id=aws_access_key_id,
@@ -226,6 +226,9 @@ class RpmImport(Import):
             patched = self.__perform_patch(_patch, _main_ref, _branch_ref)
             checksum_from_pkg = self.__get_checksum_from_dest(_dest.working_dir)
             _dest_spec = self.find_spec_file(_dest.working_dir)
+
+            # artifact checking here
+            self.__upload_or_check_artifacts()
 
             # Get the NEVRA and make a new tag
             pvlog.logger.info('Getting package information')

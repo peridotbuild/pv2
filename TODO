@@ -31,3 +31,6 @@ whole.
 
 # April 30, 2025
 Perhaps employ **kwargs in the import classes
+
+# May 3, 2025
+Determine how to add patches to a patches file (like grub2).

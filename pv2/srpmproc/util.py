@@ -274,6 +274,9 @@ def add_new_source(
     # If there is a patch file, there is a very good chance patches aren't
     # being applied one-by-one in the spec file. We're going to skip adding a
     # patch line.
+    #
+    # In the future, we will add the ability to modify the patch file. But for
+    # now, SNR is recommended.
     if (directive_type == rpmconst.RpmSpecDirectives.PATCH and
         patch_type != rpmconst.RpmSpecPatchTypes.INC_FILE):
         add_patch_line(spec_data, source_name, patch_type, new_number)

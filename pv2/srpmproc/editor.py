@@ -18,6 +18,7 @@ from pv2.util.constants import RpmConstants as rpmconst
 import pv2.srpmproc.util as srpmutil
 
 # pylint: disable=line-too-long,unspecified-encoding
+# pylint: disable=too-many-positional-arguments
 
 class Action:
     """
@@ -458,7 +459,6 @@ class AddFile(Action):
         patches_file = any(Path(package_path).rglob("*.patches"))
         directive_type = None
 
-        # TODO: Figure out how to edit a patches file. May need this for grub2 someday.
         if filetype == "patch":
             directive_type = rpmconst.RpmSpecDirectives.PATCH
         #    patch_file_path = self.find_file_name(package_path, "*.patches")
