@@ -91,8 +91,7 @@ class ModuleImport(Import):
         """
         Clone source repo
 
-        Check for a spec file and metadata file. Die early if spec isn't found
-        at least. Warn if there's no metadata.
+        This overrides the default.
         """
         pvlog.logger.info('Checking if source repo exists: %s', self.rpm_name)
         try:
@@ -214,7 +213,6 @@ class ModuleImport(Import):
         if fault > 0:
             sys.exit(fault)
 
-        print(result_dict)
         return result_dict
 
     @property

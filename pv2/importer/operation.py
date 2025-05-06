@@ -124,6 +124,20 @@ class Import:
         return file_list[0]
 
     @staticmethod
+    def module_yaml_exists(local_repo_path, module_name):
+        """
+        Does this module yaml exist?
+        """
+        yaml_file = Path(local_repo_path) / f"{module_name}.yaml"
+        modulemd_src = Path(local_repo_path) / "SOURCES" / "modulemd.src.txt"
+        if not yaml_file.exists():
+            pvlog.logger.warning("YAML doesn't exist, checking for modulemd.src")
+            if not modulemd_src.exists():
+                raise err.GitCheckoutError('module yaml does not exist')
+            return f'SOURCES/{modulemd_src.name}'
+        return yaml_file.name
+
+    @staticmethod
     def unpack_srpm(srpm_path, local_repo_path):
         """
         Unpacks an srpm to the local repo path
@@ -400,6 +414,15 @@ class Import:
         return regex_search.group(2)
 
     @staticmethod
+    def get_module_regex_groups(source_branch):
+        """
+        Returns a branch name for modules
+        """
+        regex = r'^([\w\.-]+)-stream-([\w\.-]+)'
+        regex_search = re.search(regex, source_branch)
+        return regex_search
+
+    @staticmethod
     def get_module_stream_os(release, source_branch, timestamp):
         """
         Returns a code of major, minor, micro version if applicable
@@ -418,6 +441,21 @@ class Import:
             micro_version = f'0{regex_search.group(3)}'
 
         return f'{release}{minor_version}{micro_version}{timestamp}'
+
+    @staticmethod
+    def split_nsvc_from_tag(tag) -> dict:
+        """
+        Splits NSVC from a tag
+        """
+        regex = r'.*/.*/([\w-]+)-([\w\.]+)-(\d+)\.(\w+)'
+        regex_search = re.search(regex, tag)
+        split = {
+                'module': regex_search.group(1),
+                'stream': regex_search.group(2),
+                'version': regex_search.group(3),
+                'context': regex_search.group(4)
+        }
+        return split
 
     def set_import_metadata(
             self,
@@ -444,7 +482,7 @@ class Import:
         """
         raise NotImplementedError("Imports can only be performed in subclasses")
 
-    def _build_git_url(
+    def build_git_url(
             self,
             protocol: str,
             user: Optional[str],
@@ -523,7 +561,7 @@ class Import:
         """
         if not all([self._source_git_protocol, self._source_git_host, self._source_org, self._package]):
             raise ValueError("Cannot compute source_git_url - Missing values")
-        return self._build_git_url(
+        return self.build_git_url(
                 protocol=self._source_git_protocol,
                 user=self._source_git_user,
                 host=self._source_git_host,
@@ -608,7 +646,7 @@ class Import:
         """
         if not all([self._dest_git_protocol, self._dest_git_host, self._dest_org, self._package]):
             raise ValueError("Cannot compute dest_git_url - Missing values")
-        return self._build_git_url(
+        return self.build_git_url(
                 protocol=self._dest_git_protocol,
                 user=self._dest_git_user,
                 host=self._dest_git_host,
@@ -623,7 +661,7 @@ class Import:
         """
         if not all([self._dest_git_protocol, self._dest_git_host, self._patch_org, self._package]):
             raise ValueError("Cannot compute dest_git_url - Missing values")
-        return self._build_git_url(
+        return self.build_git_url(
                 protocol=self._dest_git_protocol,
                 user=self._dest_git_user,
                 host=self._dest_git_host,
@@ -974,6 +1012,50 @@ class GitHandler:
 
         return dest_patch_repo, main_ref_check, branch_ref_check
 
+    def clone_source_module(self):
+        """
+        Clone source repo for modules
+        """
+        pvlog.logger.info('Checking if source repo exists: %s', self.module_name)
+        try:
+            check_source_repo = gitutil.lsremote(self.source_git_url)
+        except err.GitInitError:
+            pvlog.logger.exception(
+                    'Git repo for %s does not exist at the source',
+                    self.module_name)
+            sys.exit(2)
+        except Exception as exc:
+            pvlog.logger.warning('An unexpected issue occurred: %s', exc)
+            sys.exit(2)
+
+        pvlog.logger.info('Checking if source branch exists: %s',
+                          self.source_branch)
+        try:
+            gitutil.ref_check(check_source_repo, self.source_branch)
+        except err.GitCheckoutError as exc:
+            pvlog.logger.error('Branch does not exist: %s', exc)
+            sys.exit(2)
+
+        pvlog.logger.info('Cloning upstream: %s (%s)', self.module_name, self.source_branch)
+        source_repo = gitutil.clone(
+                git_url_path=self.source_git_url,
+                repo_name=self.module_name,
+                to_path=self.source_clone_path,
+                branch=self.source_branch,
+                single_branch=True
+        )
+        module_yaml = self.module_yaml_exists(self.source_clone_path, self.module_name)
+        current_source_tag = gitutil.get_current_tag(source_repo)
+        if not current_source_tag:
+            raise err.GitCheckoutError('No tag found.')
+
+        pvlog.logger.info('Tag: %s', str(current_source_tag))
+
+        if not module_yaml:
+            raise err.GitCheckoutError('No YAML was found. This import will fail.')
+
+        return source_repo, current_source_tag, module_yaml
+
     def commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
         """
         Commits and tags changes. Returns none if there's nothing to do.
@@ -993,6 +1075,7 @@ class GitHandler:
             if not self.overwrite_tags:
                 return False, str(repo.head.commit), None
             pvlog.logger.warning('Overwriting tag...')
+            raise err.GitApplyError('Overwriting is not supported yet')
 
         pvlog.logger.info('Attempting to commit and tag...')
         if patched:
