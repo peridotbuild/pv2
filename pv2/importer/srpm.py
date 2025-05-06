@@ -167,7 +167,7 @@ class SrpmImport(Import):
 
             _lookasides = self.get_dict_of_lookaside_files(_dest.working_dir)
             self.generate_metadata(_dest.working_dir, self.rpm_name, _lookasides)
-            self.generate_filesum(_dest.working_dir, self.rpm_name, "Direct Git Import")
+            self.generate_filesum(_dest.working_dir, self.rpm_name, self.srpm_hash)
             self.__upload_artifacts(_lookasides)
 
             msg = f'import {nvr}'
