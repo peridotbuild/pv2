@@ -1,0 +1,16 @@
+---
+patch:
+  - search_and_replace:
+      - target: specfile
+        find: "-Dsupport-url=https://access.redhat.com/support"
+        replace: "-Dsupport-url=https://wiki.rockylinux.org/rocky/support"
+      - target: specfile
+        find: "-Dsbat-distro-url=mailto:secalert@redhat.com"
+        replace: "-Dsbat-distro-url=mailto:security@rockylinux.org"
+#  - spec_changelog:
+#      - name: "Louis Abel"
+#        email: "label@resf.org"
+#        line:
+#          - "Set support URL to the wiki"
+#          - "Set sbat email to security@rockylinux.org"
+...

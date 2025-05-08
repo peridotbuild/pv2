@@ -1069,6 +1069,9 @@ class GitHandler:
             os.remove(dest_gitignore_file)
 
         tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
+        if patched:
+            tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
+            commit_msg += ' (patched by pv2)'
 
         if tag in repo.tags:
             pvlog.logger.warning('!! Tag already exists !!')
@@ -1078,8 +1081,6 @@ class GitHandler:
             raise err.GitApplyError('Overwriting is not supported yet')
 
         pvlog.logger.info('Attempting to commit and tag...')
-        if patched:
-            tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
         gitutil.add_all(repo)
         verify = repo.is_dirty()
         if verify:
