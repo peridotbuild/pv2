@@ -128,7 +128,7 @@ class JavaPortableImport(Import):
         """
         if not all([self._source_git_protocol, self._source_git_host, self._source_org, self._package]):
             raise ValueError("Cannot compute source_git_url - Missing values")
-        return self._build_git_url(
+        return self.build_git_url(
                 protocol=self._source_git_protocol,
                 user=self._source_git_user,
                 host=self._source_git_host,

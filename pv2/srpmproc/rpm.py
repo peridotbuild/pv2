@@ -109,6 +109,7 @@ class RpmImport(Import):
         In most cases, these should already be uploaded with the importer
         utility.
         """
+        pvlog.logger.info("Checking if sources exist in the lookaside")
 
     def __find_single_yaml(self, search_path, filename):
         """
