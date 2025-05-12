@@ -60,8 +60,16 @@ class JavaPortableImport(Import):
         shutil.copy2(f'{dest}/SOURCES/{self.java_name_portable}.specfile',
                      f'{dest}/SPECS/{self.java_name_portable}.spec')
         path = Path(f'{dest}/SPECS/{self.java_name}.spec')
+
+        shutil.copy2(f'{dest}/.{self.package}.metadata',
+                     f'{dest}/.{self.java_name_portable}.metadata')
+        pathmeta = Path(f'{dest}/.{self.package}.metadata')
+
         if path.is_file() or path.is_symlink():
             path.unlink()
+
+        if pathmeta.is_file() or pathmeta.is_symlink():
+            pathmeta.unlink()
 
     def pkg_import(self):
         """
