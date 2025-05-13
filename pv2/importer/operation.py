@@ -985,7 +985,7 @@ class GitHandler:
             check_patch_repo = gitutil.lsremote(self.dest_patch_git_url)
         except err.GitInitError:
             pvlog.logger.error('No patch repo found, skipping')
-            return None
+            return None, False, False
         except Exception as exc:
             pvlog.logger.warning('An unexpected issue occurred: %s', exc)
             sys.exit(2)

@@ -207,6 +207,7 @@ class RpmImport(Import):
         """
         fault = 0
         result_dict = {}
+        patched = False
         try:
             _source, _source_tag, _spec = self.git.clone_source()
             _dest = self.git.clone_dest()
@@ -224,7 +225,6 @@ class RpmImport(Import):
             pvlog.logger.info('Copying package data')
             self.remove_everything(_dest.working_dir)
             self.copy_everything(_source.working_dir, _dest.working_dir)
-            patched = False
             if _patch:
                 patched = self.__perform_patch(_patch, _main_ref, _branch_ref)
             checksum_from_pkg = self.__get_checksum_from_dest(_dest.working_dir)
