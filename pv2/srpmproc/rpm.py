@@ -224,7 +224,9 @@ class RpmImport(Import):
             pvlog.logger.info('Copying package data')
             self.remove_everything(_dest.working_dir)
             self.copy_everything(_source.working_dir, _dest.working_dir)
-            patched = self.__perform_patch(_patch, _main_ref, _branch_ref)
+            patched = False
+            if _patch:
+                patched = self.__perform_patch(_patch, _main_ref, _branch_ref)
             checksum_from_pkg = self.__get_checksum_from_dest(_dest.working_dir)
             _dest_spec = self.find_spec_file(_dest.working_dir)
 
