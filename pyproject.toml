@@ -1,6 +1,6 @@
 [project]
 name = "pv2"
-version = "0.15.0"
+version = "0.15.1"
 description = "PV2 backend framework module"
 readme = "README.md"
 authors = [
@@ -52,6 +52,7 @@ package-dir = { "pv2" = "pv2" }
 import_pkg = "pv2.scripts.import_pkg:run"
 import_module = "pv2.scripts.import_module:run"
 import_java = "pv2.scripts.import_java:run"
+srpmproc = "pv2.scripts.srpmproc:run"
 
 [build-system]
 requires = ["flit_core >=3.2,<4"]
