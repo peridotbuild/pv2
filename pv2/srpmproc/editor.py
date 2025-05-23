@@ -385,8 +385,8 @@ class SpecChangelog(Action):
         pvlog.logger.info("Adding changelog entry by %s (%s): %s", name, email, line)
 
         current_date = datetime.datetime.today().strftime("%a %b %d %Y")
-        for c, line in enumerate(file):
-            if line == "%changelog":
+        for c, l in enumerate(file):
+            if l == "%changelog":
                 full_version = f"{version}-{release}"
                 if epoch is not None:
                     full_version = f"{epoch}:{full_version}"
@@ -401,6 +401,7 @@ class SpecChangelog(Action):
                             )
                     )
                 file.insert(c + 2, "\n".join(changelog_info_lines) + "\n")
+        generic.write_file_from_list(file_path, file)
 
 class AddFile(Action):
     """

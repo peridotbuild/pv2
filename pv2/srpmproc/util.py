@@ -183,7 +183,10 @@ def get_new_number(spec_data, no_numbers, directive_type, last_number, source_nu
     if no_numbers:
         new_number = ""
     else:
-        new_number = str(last_number + 1)
+        if not last_number:
+            new_number = str(0)
+        else:
+            new_number = str(last_number + 1)
         if source_number != -1:
             if directive_type == rpmconst.RpmSpecDirectives.PATCH:
                 if source_number in current_patch_ids:
