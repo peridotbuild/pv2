@@ -130,11 +130,12 @@ class Action:
             if count != -1 and counter >= count:
                 return changed, counter
 
-            if not replace_lines and current_line.strip() == find:
-                file.pop(i)
-                changed = True
-                pvlog.logger.info("Deleted line: '%s' on line %s", find, i + 1)
-                return True, counter
+            if not replace_lines:
+                if current_line.strip() == find:
+                    file.pop(i)
+                    changed = True
+                    pvlog.logger.info("Deleted line: '%s' on line %s", find, i + 1)
+                    return True, counter
 
             file[i] = current_line.replace(find, "\n".join(replace_lines) if replace_lines else "", 1)
             pvlog.logger.info("Replaced line(s): '%s' on line %s", replace_lines, i + 1)
