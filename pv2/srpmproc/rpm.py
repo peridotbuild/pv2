@@ -283,7 +283,7 @@ class RpmImport(Import):
         except (err.ConfigurationError, err.FileNotFound,
                 err.TooManyFilesError, err.NotAppliedError,
                 err.PatchConfigTypeError, err.PatchConfigValueError,
-                err.GitInitError, err.GitApplyError) as exc:
+                err.GitInitError, err.GitApplyError, err.UploadError) as exc:
             pvlog.logger.error('%s', exc)
             fault = exc.fault_code
         except Exception as exc:

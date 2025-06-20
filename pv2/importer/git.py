@@ -284,7 +284,7 @@ class GitImport(Import):
             )
 
         except (err.GitInitError, err.GitCommitError, err.ConfigurationError,
-                err.MissingValueError, err.GitApplyError) as exc:
+                err.MissingValueError, err.GitApplyError, err.UploadError) as exc:
             pvlog.logger.error('%s', exc)
             fault = exc.fault_code
         except Exception as exc:
