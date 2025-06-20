@@ -9,6 +9,7 @@ from pathlib import Path
 from pv2.util import log as pvlog
 from pv2.util import gitutil, fileutil, decorators
 from pv2.util import error as err
+from pv2.util import uploader as upload
 #from pv2.util.constants import RpmConstants as rpmconst
 from pv2.importer.operation import Import, GitHandler
 from .editor import Config
@@ -29,6 +30,7 @@ class RpmImport(Import):
             source_git_host: str,
             dest_git_host: str,
             source_branch=None,
+            upstream_lookaside: str = 'rocky',
             dest_branch=None,
             distprefix: str = 'el',
             distcustom=None,
@@ -81,6 +83,7 @@ class RpmImport(Import):
                 _aws_region=aws_region,
                 _aws_use_ssl=aws_use_ssl,
                 _local_path=local_path,
+                _upstream_lookaside=upstream_lookaside,
         )
         self.__rpm_name = package
         if preconv_names:
@@ -100,7 +103,8 @@ class RpmImport(Import):
         self.git = GitHandler(self)
 
     # functions
-    def __upload_or_check_artifacts(self):
+    def __upload_or_check_artifacts(self, metafile):
+            #bucket, aws_key_id: str, aws_secret_key: str, use_ssl = bool, region = str):
         """
         Checks for artifacts in a given bucket and reports if they're there or
         not and if configured, it will try to upload said artifacts from a
@@ -110,6 +114,32 @@ class RpmImport(Import):
         utility.
         """
         pvlog.logger.info("Checking if sources exist in the lookaside")
+
+        # Note: We don't support uploading from here yet. Uploads to our
+        # lookaside should be done via regular src-rhel import means or another
+        # method.
+        if not self.aws_bucket:
+            pvlog.logger.warning('No bucket was provided. We cannot check for sources.')
+            return
+
+        if not self.aws_region or not self.aws_access_key_id or not self.aws_access_key:
+            pvlog.logger.warning('WARNING: Access key, ID, nor region were provided. We will try to guess these values.')
+
+        file_dict = self.parse_metadata_file(metafile)
+        for name, sha in file_dict.items():
+            dest_name = sha
+            exists = upload.file_exists_s3(
+                    self.aws_bucket,
+                    dest_name,
+                    self.aws_access_key_id,
+                    self.aws_access_key,
+                    self.aws_use_ssl,
+                    self.aws_region)
+
+            if exists:
+                pvlog.logger.info('File %s with hash %s exists in the bucket %s.', dest_name, name, self.aws_bucket)
+            else:
+                pvlog.logger.warning('File %s with hash %s is not in the bucket %s.', dest_name, name, self.aws_bucket)
 
     def __find_single_yaml(self, search_path, filename):
         """
@@ -213,6 +243,7 @@ class RpmImport(Import):
             _dest = self.git.clone_dest()
             _patch, _main_ref, _branch_ref = self.git.clone_patch_repo()
             _dist = self.dist_tag
+            _metafile = self.get_metafile()
 
             if _source_tag:
                 _dist = self.parse_git_tag(str(_source_tag))[-1]
@@ -231,7 +262,7 @@ class RpmImport(Import):
             _dest_spec = self.find_spec_file(_dest.working_dir)
 
             # artifact checking here
-            self.__upload_or_check_artifacts()
+            self.__upload_or_check_artifacts(_metafile)
 
             # Get the NEVRA and make a new tag
             pvlog.logger.info('Getting package information')

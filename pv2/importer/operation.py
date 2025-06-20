@@ -301,6 +301,9 @@ class Import:
         """
         Upload an object to s3
         """
+        if not bucket:
+            pvlog.logger.warning('No bucket was provided. Upload will be skipped.')
+            return
         pvlog.logger.info('Pushing sources to S3...')
         for name, sha in file_dict.items():
             source_path = f'{repo_path}/{name}'
@@ -496,6 +499,33 @@ class Import:
         if protocol == "ssh":
             return f"ssh://{user}@{host}/{org}/{package}.git"
         return f"{protocol}://{host}/{org}/{package}.git"
+
+    def get_metafile(self):
+        """
+        Gets which metadata file we're going to use
+        """
+        metafile_to_use = None
+        if os.path.exists(self.metadata_file):
+            no_metadata_list = ['stream', 'fedora']
+            if any(ignore in self.upstream_lookaside for ignore in no_metadata_list):
+                # pylint: disable=line-too-long
+                raise err.ConfigurationError(f'metadata files are not supported with {self.upstream_lookaside}')
+            metafile_to_use = self.metadata_file
+        elif os.path.exists(self.sources_file):
+            no_sources_list = ['rocky', 'centos']
+            if any(ignore in self.upstream_lookaside for ignore in no_sources_list):
+                # pylint: disable=line-too-long
+                raise err.ConfigurationError(f'sources files are not supported with {self.upstream_lookaside}')
+            metafile_to_use = self.sources_file
+        else:
+            # There isn't a reason to make a blank file right now.
+            pvlog.logger.warning('WARNING: There was no sources or metadata found.')
+            with open(self.metadata_file, 'w+') as metadata_handle:
+                pass
+
+        if not metafile_to_use:
+            pvlog.logger.warning('Source: There was no metadata file found. Import may not work correctly.')
+        return metafile_to_use
 
     # Properties
     @property

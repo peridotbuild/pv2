@@ -123,18 +123,15 @@ class SrpmImport(Import):
                 # I don't want to blatantly blow up here yet.
                 if not self.aws_region or not self.aws_access_key_id or not self.aws_access_key:
                     pvlog.logger.warning('WARNING: Access key, ID, nor region were provided. We will try to guess these values.')
-                if not self.aws_bucket:
-                    pvlog.logger.warning('WARNING: No bucket was provided. Skipping upload.')
-                else:
-                    self.upload_to_s3(
-                            self.dest_clone_path,
-                            sources,
-                            self.aws_bucket,
-                            self.aws_access_key_id,
-                            self.aws_access_key,
-                            self.aws_use_ssl,
-                            self.aws_region,
-                    )
+                self.upload_to_s3(
+                        self.dest_clone_path,
+                        sources,
+                        self.aws_bucket,
+                        self.aws_access_key_id,
+                        self.aws_access_key,
+                        self.aws_use_ssl,
+                        self.aws_region,
+                )
                 # this is a quick cleanup op, will likely change the name
                 # later.
                 self.skip_local_import_lookaside(self.dest_clone_path, sources)

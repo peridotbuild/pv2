@@ -122,34 +122,6 @@ class GitImport(Import):
         self.git = GitHandler(self)
 
     # functions
-    def __get_metafile(self):
-        """
-        Gets which metadata file we're going to use
-        """
-        metafile_to_use = None
-        if os.path.exists(self.metadata_file):
-            no_metadata_list = ['stream', 'fedora']
-            if any(ignore in self.upstream_lookaside for ignore in no_metadata_list):
-                # pylint: disable=line-too-long
-                raise err.ConfigurationError(f'metadata files are not supported with {self.upstream_lookaside}')
-            metafile_to_use = self.metadata_file
-        elif os.path.exists(self.sources_file):
-            no_sources_list = ['rocky', 'centos']
-            if any(ignore in self.upstream_lookaside for ignore in no_sources_list):
-                # pylint: disable=line-too-long
-                raise err.ConfigurationError(f'sources files are not supported with {self.upstream_lookaside}')
-            metafile_to_use = self.sources_file
-        else:
-            #raise err.GenericError('sources or metadata file NOT found')
-            # There isn't a reason to make a blank file right now.
-            pvlog.logger.warning('WARNING: There was no sources or metadata found.')
-            with open(self.metadata_file, 'w+') as metadata_handle:
-                pass
-
-        if not metafile_to_use:
-            pvlog.logger.warning('Source: There was no metadata file found. Import may not work correctly.')
-        return metafile_to_use
-
     def __get_actual_lookaside_url(self, filename, hashtype, checksum):
         """
         Returns the translated URL to obtain sources
@@ -232,21 +204,18 @@ class GitImport(Import):
         """
         if not self.skip_lookaside:
             if self.s3_upload:
-                # I don't want to blatantly blow up here yet.
                 if not self.aws_region or not self.aws_access_key_id or not self.aws_access_key:
                     pvlog.logger.warning('WARNING: Access key, ID, nor region were provided. We will try to guess these values.')
-                if not self.aws_bucket:
-                    pvlog.logger.warning('WARNING: No bucket was provided. Skipping upload.')
-                else:
-                    self.upload_to_s3(
-                            self.dest_clone_path,
-                            sources,
-                            self.aws_bucket,
-                            self.aws_access_key_id,
-                            self.aws_access_key,
-                            self.aws_use_ssl,
-                            self.aws_region,
-                    )
+
+                self.upload_to_s3(
+                        self.dest_clone_path,
+                        sources,
+                        self.aws_bucket,
+                        self.aws_access_key_id,
+                        self.aws_access_key,
+                        self.aws_use_ssl,
+                        self.aws_region,
+                )
                 # this is a quick cleanup op, will likely change the name
                 # later.
                 self.skip_local_import_lookaside(self.dest_clone_path, sources)
@@ -279,7 +248,7 @@ class GitImport(Import):
             #if self.distcustom:
             #    _dist = self.distcustom
 
-            _metafile = self.__get_metafile()
+            _metafile = self.get_metafile()
             self.__download_sources(_metafile)
             _specfile = self.__get_actual_specfile()
 
