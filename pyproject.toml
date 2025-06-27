@@ -42,8 +42,8 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/peridotbuild/pv2"
-"Bug Tracker" = "https://github.com/peridotbuild/pv2/issues"
+"Homepage" = "https://git.resf.org/peridot/pv2"
+"Bug Tracker" = "https://git.resf.org/peridot/pv2/issues"
 
 [tool.setuptools]
 package-dir = { "pv2" = "pv2" }
