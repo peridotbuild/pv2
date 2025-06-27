@@ -461,15 +461,13 @@ class AddFile(Action):
         patches_file = any(Path(package_path).rglob("*.patches"))
         directive_type = None
 
-        if filetype == "patch":
-            directive_type = rpmconst.RpmSpecDirectives.PATCH
-        #    patch_file_path = self.find_file_name(package_path, "*.patches")
-        #    patch_file_data = generic.read_file_to_list(patch_file_path)
-        elif filetype == "source":
-            directive_type = rpmconst.RpmSpecDirectives.SOURCE
-
         spec_file_path = self.find_file_name(package_path, "*.spec")
         spec_data = generic.read_file_to_list(spec_file_path)
+
+        if filetype == "patch":
+            directive_type = rpmconst.RpmSpecDirectives.PATCH
+        elif filetype == "source":
+            directive_type = rpmconst.RpmSpecDirectives.SOURCE
 
         pvlog.logger.info("Adding file to package: %s", name)
         if add_to_spec:
@@ -481,6 +479,17 @@ class AddFile(Action):
                     patches_file,
                     number
             )
+
+        if patches_file:
+            patch_file_path = self.find_file_name(package_path, "*.patches")
+            patch_file_data = generic.read_file_to_list(patch_file_path)
+            srpmutil.add_new_source_patch_file(
+                    patch_file_data,
+                    name,
+                    directive_type,
+                    number
+            )
+            generic.write_file_from_list(patch_file_path, patch_file_data)
 
         # we can determine if we're uploading to a lookaside here
         if upload_to_lookaside and filetype == "source":

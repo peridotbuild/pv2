@@ -272,16 +272,38 @@ def add_new_source(
     new_number = get_new_number(spec_data, no_numbers, directive_type,
                                 last_number, source_number)
 
-    spec_data.insert(last_idx, f"{directive_type.value}{new_number}: {source_name}")
+    # Since this function is always ran, we want to make sure no data is added
+    # when there is a patches file.
+    if patch_type != rpmconst.RpmSpecPatchTypes.INC_FILE:
+        spec_data.insert(last_idx, f"{directive_type.value}{new_number}: {source_name}")
 
     # If there is a patch file, there is a very good chance patches aren't
     # being applied one-by-one in the spec file. We're going to skip adding a
     # patch line.
-    #
-    # In the future, we will add the ability to modify the patch file. But for
-    # now, SNR is recommended.
     if (directive_type == rpmconst.RpmSpecDirectives.PATCH and
         patch_type != rpmconst.RpmSpecPatchTypes.INC_FILE):
         add_patch_line(spec_data, source_name, patch_type, new_number)
 
     spec_data.reverse()
+
+def add_new_source_patch_file(
+        patch_data: list[str],
+        source_name: str,
+        directive_type: rpmconst.RpmSpecDirectives,
+        source_number: int = -1) -> None:
+    """
+    Adds the new source file to the patches file
+    """
+    patch_data.reverse()
+
+    # find last directive thing here
+    last_number, last_idx, no_numbers = get_last_directive(patch_data,
+                                                             directive_type)
+
+    pvlog.logger.info("Getting all source and patch information if needed")
+    new_number = get_new_number(patch_data, no_numbers, directive_type,
+                                last_number, source_number)
+
+    patch_data.insert(last_idx, f"{directive_type.value}{new_number}: {source_name}")
+
+    patch_data.reverse()
