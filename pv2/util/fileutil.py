@@ -16,7 +16,8 @@ __all__ = [
         'get_magic_file',
         'get_magic_content',
         'mkdir',
-        'file_exists_local'
+        'file_exists_local',
+        'file_is_relative'
 ]
 
 def filter_files(directory_path,
@@ -122,3 +123,12 @@ def file_exists_local(file_path) -> bool:
         confirmed_path = Path(file_path)
 
     return confirmed_path.exists()
+
+def file_is_relative(source, files_dir):
+    """
+    Ensures that the files we're copying from isn't in some weird place.
+    """
+    try:
+        source.resolve().relative_to(files_dir.resolve())
+    except Exception as exc:
+        raise err.ConfigurationError(f"Invalid source path outside of files: {source}") from exc

@@ -411,6 +411,7 @@ class AddFile(Action):
     allowed_keys = {
             "type": str,
             "name": str,
+            "source_name": str,
             "number": str,
             "add_to_spec": bool,
             "upload": bool
@@ -428,14 +429,27 @@ class AddFile(Action):
                     "Invalid config: Must be one of {self.valid_types}"
             )
 
-    def __copy_file(self, package_path: Path, file_to_copy: str):
+    def __copy_file(self, package_path: Path, file_to_copy: str, source_override: str = None):
         """
         Copies the specified file from the patch repo into the package repo.
         """
-        source = (self.config_path.parent / "files") / file_to_copy
+        # Making sure source_override is treated as unset is empty
+        source_filename = (source_override or "").strip() or file_to_copy
+        files_dir = self.config_path.parent / "files"
+
+        source = files_dir / source_filename
         target = Path(package_path) / "SOURCES" / file_to_copy
 
         target.parent.mkdir(parents=True, exist_ok=True)
+
+        # Run checks against the source
+        fileutil.file_is_relative(source, files_dir)
+
+        if not source.exists():
+            raise err.NotAppliedError(f"Source does not exist: The file {source}")
+
+        if not source.is_file():
+            raise err.NotAppliedError(f"Source is not a file: {source}")
 
         if target.exists():
             raise err.NotAppliedError(f"Target Exists: The file {file_to_copy} already exists")
@@ -448,6 +462,7 @@ class AddFile(Action):
         The executed action
         """
         name = self.data['name']
+        source_override = self.data.get("source_name") or None
         filetype = self.data['type']
         number = self.data['number'] if self.data['number'] != "latest" else -1
 
@@ -496,7 +511,7 @@ class AddFile(Action):
             srpmutil.upload_to_lookaside(name)
             # modify the metadata here...
         else:
-            self.__copy_file(package_path, name)
+            self.__copy_file(package_path, name, source_override)
 
         generic.write_file_from_list(spec_file_path, spec_data)
 
@@ -549,17 +564,31 @@ class ReplaceFile(Action):
     required_keys = ["filename"]
     allowed_keys = {
             "filename": str,
+            "source_filename": str,
             "upload_to_lookaside": bool
     }
 
-    def __copy_file(self, package_path: Path, file_to_copy: str):
+    def __copy_file(self, package_path: Path, file_to_copy: str, source_override: str = None):
         """
         Copies the specified file from the patch repo into the package repo.
         """
-        source = (self.config_path.parent / "files") / file_to_copy
+        # Making sure source_override is treated as unset is empty
+        source_filename = (source_override or "").strip() or file_to_copy
+        files_dir = self.config_path.parent / "files"
+
+        source = files_dir / source_filename
         target = Path(package_path) / "SOURCES" / file_to_copy
 
         target.parent.mkdir(parents=True, exist_ok=True)
+
+        # Run checks against the source
+        fileutil.file_is_relative(source, files_dir)
+
+        if not source.exists():
+            raise err.NotAppliedError(f"Source does not exist: The file {source}")
+
+        if not source.is_file():
+            raise err.NotAppliedError(f"Source is not a file: {source}")
 
         if not target.exists():
             raise err.NotAppliedError(f"Target Does Not Exist: The file {file_to_copy} isn't there.")
@@ -572,6 +601,7 @@ class ReplaceFile(Action):
         The executed action
         """
         filename = self.data['filename']
+        source_override = self.data.get("source_filename") or None
 
         # If no value is set, the answer is ALWAYS false.
         upload_to_lookaside = self.data.get('upload', False)
@@ -582,7 +612,7 @@ class ReplaceFile(Action):
             srpmutil.upload_to_lookaside(filename)
             # modify the metadata here...
         else:
-            self.__copy_file(package_path, filename)
+            self.__copy_file(package_path, filename, source_override)
 
 class ApplyScript(Action):
     """
