@@ -185,7 +185,7 @@ class ModuleImport(Import):
             self.generate_metadata(_dest.working_dir, self.module_name, {})
             msg = f'import {self.nsvc}'
             pvlog.logger.info('Importing: %s', self.nsvc)
-            commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, self.nsvc, False)
+            commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, self.nsvc, False, self.overwrite_tags)
 
             if commit_res:
                 self.git.push_changes(_dest, commit_ref)

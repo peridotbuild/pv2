@@ -1086,7 +1086,7 @@ class GitHandler:
 
         return source_repo, current_source_tag, module_yaml
 
-    def commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool):
+    def commit_and_tag(self, repo, commit_msg: str, nevra: str, patched: bool, force: bool = False):
         """
         Commits and tags changes. Returns none if there's nothing to do.
         """
@@ -1105,17 +1105,17 @@ class GitHandler:
 
         if tag in repo.tags:
             pvlog.logger.warning('!! Tag already exists !!')
-            if not self.overwrite_tags:
-                return False, str(repo.head.commit), None
-            pvlog.logger.warning('Overwriting tag...')
-            raise err.GitApplyError('Overwriting is not supported yet')
+            # if not self.overwrite_tags:
+            #     return False, str(repo.head.commit), None
+            # pvlog.logger.warning('Overwriting tag...')
+            # raise err.GitApplyError('Overwriting is not supported yet')
 
         pvlog.logger.info('Attempting to commit and tag...')
         gitutil.add_all(repo)
         verify = repo.is_dirty()
         if verify:
             gitutil.commit(repo, commit_msg)
-            ref = gitutil.tag(repo, tag, commit_msg)
+            ref = gitutil.tag(repo, tag, commit_msg, force)
             pvlog.logger.info('Tag: %s', tag)
             return True, str(repo.head.commit), ref
         pvlog.logger.info('No changes found.')

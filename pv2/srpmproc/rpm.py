@@ -271,7 +271,7 @@ class RpmImport(Import):
             nvr = f"{self.rpm_name}-{evr}"
             msg = f'import {nvr}'
             pvlog.logger.info('Importing: %s', nvr)
-            commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, nvr, patched)
+            commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, nvr, patched, self.overwrite_tags)
             if commit_res:
                 self.git.push_changes(_dest, commit_ref)
 
