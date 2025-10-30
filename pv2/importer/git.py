@@ -267,7 +267,7 @@ class GitImport(Import):
 
             _lookasides = self.get_dict_of_lookaside_files(_dest.working_dir)
             self.generate_metadata(_dest.working_dir, self.rpm_name, _lookasides)
-            self.generate_filesum(_dest.working_dir, self.rpm_name, "Direct Git Import")
+            self.generate_filesum(_dest.working_dir, self.rpm_name, f"Direct Git Import ({self.source_git_host})")
             self.__upload_artifacts(_lookasides)
 
             msg = f'import {nvr}'
@@ -280,7 +280,7 @@ class GitImport(Import):
             result_dict = self.set_import_metadata(
                     commit_hash,
                     evr_dict,
-                    'Direct Git Import'
+                    f'Direct Git Import ({self.source_git_host})'
             )
 
         except (err.GitInitError, err.GitCommitError, err.ConfigurationError,

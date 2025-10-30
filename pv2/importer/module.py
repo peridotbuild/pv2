@@ -193,7 +193,7 @@ class ModuleImport(Import):
             result_dict = self.set_import_metadata(
                     commit_hash,
                     self.nsvc_dict,
-                    'Direct Git Import'
+                    f'Direct Git Import ({self.source_git_host})'
             )
 
         except (err.GitInitError, err.GitCommitError, err.ConfigurationError,
