@@ -1126,8 +1126,8 @@ class GitHandler:
 
         if tag in repo.tags:
             pvlog.logger.warning('!! Tag already exists !!')
-            # if not self.overwrite_tags:
-            #     return False, str(repo.head.commit), None
+            if not self.overwrite_tags:
+                return False, str(repo.head.commit), None
             # pvlog.logger.warning('Overwriting tag...')
             # raise err.GitApplyError('Overwriting is not supported yet')
 
@@ -1136,6 +1136,8 @@ class GitHandler:
         verify = repo.is_dirty()
         if verify:
             gitutil.commit(repo, commit_msg)
+            if self.overwrite_tags:
+                pvlog.logger.warning('!! Tag will be overwritten !!')
             ref = gitutil.tag(repo, tag, commit_msg, force)
             pvlog.logger.info('Tag: %s', tag)
             return True, str(repo.head.commit), ref
