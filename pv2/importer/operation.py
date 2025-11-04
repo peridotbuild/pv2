@@ -69,6 +69,9 @@ class Import:
     _branch_versions: dict = field(default_factory=dict)
     _package_checksum: Optional[str] = 'Unknown'
 
+    _side_commit_hash: Optional[str] = None
+    _side_package_version: Optional[str] = None
+
     @staticmethod
     def remove_everything(local_repo_path):
         """
@@ -885,6 +888,24 @@ class Import:
         """
         return self._local_path
 
+    ##########################################################################
+    # Sideport properties
+    @property
+    def side_commit_hash(self):
+        """
+        Returns sideport commit hash
+        """
+        return self._side_commit_hash
+
+    @property
+    def side_package_version(self):
+        """
+        Returns sideport package version
+        """
+        return self._side_package_version
+    # End Sideport
+    ##########################################################################
+
 class GitHandler:
     """
     Git Handler class, specifically for handling repeatable actions among all
@@ -1121,9 +1142,9 @@ class GitHandler:
         pvlog.logger.info('No changes found.')
         return False, str(repo.head.commit), None
 
-    def push_changes(self, repo, ref):
+    def push_changes(self, repo, ref, force: bool = False):
         """
         Pushes all changes to destination
         """
         pvlog.logger.info('Pushing to downstream repo')
-        gitutil.push(repo, ref)
+        gitutil.push(repo, ref, force)

@@ -188,7 +188,7 @@ class ModuleImport(Import):
             commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, self.nsvc, False, self.overwrite_tags)
 
             if commit_res:
-                self.git.push_changes(_dest, commit_ref)
+                self.git.push_changes(_dest, commit_ref, self.overwrite_tags)
 
             result_dict = self.set_import_metadata(
                     commit_hash,

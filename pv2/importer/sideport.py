@@ -14,18 +14,22 @@ from pv2.util import log as pvlog
 from . import Import
 from . import GitHandler
 
-__all__ = ['GitImport']
+__all__ = ['GitSidePort']
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=line-too-long
-class GitImport(Import):
+class GitSidePort(Import):
     """
-    Import class for importing from git (e.g. pagure or gitlab)
+    Import class for doing "side imports" from one branch to another.
 
-    This attempts to look at a git repo that was cloned and check for either a
-    metadata file or a sources file. After that, it will make a best effort
-    guess on how to convert it and push it to your git forge with an expected
-    format.
+    Given specific values, it can take a specific commit hash or a "tagged"
+    version and attempt to import it into a destination branch. This is for
+    cases to avoid re-importing a bunch of packages when it's unnecessary.
+
+    Note that for sideports, ssh is the default protocol, as opposed to the
+    other classes that are https.
+
+    Note that tag overwriting is NOT supported for this class.
     """
     # pylint: disable=too-many-arguments,too-many-locals
     def __init__(
@@ -33,92 +37,48 @@ class GitImport(Import):
             package: str,
             source_git_host: str,
             source_org: str,
-            dest_git_host: str,
-            release: str,
             source_branch: str,
-            upstream_lookaside: str,
-            alternate_spec_name=None,
-            preconv_names: bool = False,
-            dest_lookaside: str = '/var/www/html/sources',
-            source_git_protocol: str = 'https',
-            dest_branch=None,
-            distprefix: str = 'el',
-            distcustom=None,
+            dest_branch: str,
+            side_commit_hash: str = '',
+            side_package_version: str = '',
+            source_git_protocol: str = 'ssh',
             source_git_user: str = 'git',
-            dest_git_user: str = 'git',
-            dest_org: str = 'rpms',
-            dest_git_protocol: str = 'ssh',
-            aws_access_key_id=None,
-            aws_access_key=None,
-            aws_bucket=None,
-            aws_region=None,
-            aws_use_ssl: bool = False,
-            skip_lookaside: bool = False,
-            overwrite_tags: bool = False,
-            s3_upload: bool = False
+            preconv_names: bool = False,
     ):
         """
         Init the class.
 
         Set the org to something else if needed. Note that if you are using
         subgroups, do not start with a leading slash (e.g. some_group/rpms)
+
+        If commit_hash is set to "tip" or "head", it will take whatever is at
+        the top of the source branch, import, and determine the version as
+        needed. This is in cases where there may have been side modifications
+        that were not properly tagged, the hash/version is unknown, or mass
+        side imports are being performed from one branch to the next (e.g.
+        X-beta to X)
         """
         # I *should* be able to simplify this somehow
         super().__init__(
                 _package=package,
-                _release=release,
                 _preconv_names=preconv_names,
-                _distprefix=distprefix,
-                _distcustom=distcustom,
-                _alternate_spec_name=alternate_spec_name,
                 _source_git_protocol=source_git_protocol,
                 _source_git_user=source_git_user,
                 _source_git_host=source_git_host,
                 _source_org=source_org,
                 _source_branch=source_branch,
-                _dest_git_host=dest_git_host,
-                _dest_git_user=dest_git_user,
-                _dest_org=dest_org,
+                _dest_git_host=source_git_host,
+                _dest_git_user=source_git_user,
+                _dest_org=source_org,
                 _dest_branch=dest_branch,
-                _dest_git_protocol=dest_git_protocol,
-                _overwrite_tags=overwrite_tags,
-                _dest_lookaside=dest_lookaside,
-                _aws_access_key_id=aws_access_key_id,
-                _aws_access_key=aws_access_key,
-                _aws_bucket=aws_bucket,
-                _aws_region=aws_region,
-                _aws_use_ssl=aws_use_ssl,
-                _skip_lookaside=skip_lookaside,
-                _s3_upload=s3_upload,
-                _upstream_lookaside=upstream_lookaside,
+                _dest_git_protocol=source_git_protocol,
+                _side_commit_hash=side_commit_hash,
+                _side_package_version=side_package_version,
         )
         self.__rpm_name = package
         if preconv_names:
             self._package = self._package.replace('+', 'plus')
-
         self.__source_git_spec = f'{self.source_clone_path}/{self.rpm_name}.spec'
-
-        self._dest_branch = source_branch
-
-        if dest_branch:
-            self._dest_branch = dest_branch
-
-        if distcustom:
-            self.override_dist_tag(f'.{distcustom}')
-        elif source_branch and "stream" in source_branch:
-            stream_name = self.get_module_stream_name(source_branch)
-            if "next" in stream_name:
-                stream_name = f"rhel{self.release_ver}"
-            _distmarker = self.default_dist_tag.lstrip('.')
-            self.override_dist_tag(f'.module+{_distmarker}+1010+deadbeef')
-            self._dest_branch = f'{self._dest_branch}-stream-{stream_name}'
-
-        if not upstream_lookaside:
-            raise err.ConfigurationError(f'{upstream_lookaside} is not valid.')
-
-        if alternate_spec_name:
-            self.__source_git_spec = f'{self.source_clone_path}/{alternate_spec_name}.spec'
-
         self.git = GitHandler(self)
 
     # functions
