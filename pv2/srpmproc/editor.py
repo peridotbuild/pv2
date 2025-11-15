@@ -778,11 +778,11 @@ class Config:
                 patch_action = self.ACTIONS.get(patch_action_name)
                 if not patch_action:
                     raise err.PatchConfigValueError(
-                            "Unknown Action: {patch_action_name} is not a valid action."
+                            f"Unknown Action: {patch_action_name} is not a valid action."
                     )
                 if not isinstance(patch_action_list, list):
                     raise err.PatchConfigTypeError(
-                            "Wrong format: {patch_action_name} is not a list."
+                            f"Wrong format: {patch_action_name} is not a list."
                     )
 
     def run(self, package_path: Path):
