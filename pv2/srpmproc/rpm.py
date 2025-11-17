@@ -246,7 +246,7 @@ class RpmImport(Import):
             _metafile = self.get_metafile()
 
             if _source_tag:
-                if (".module_el" in _source_tag) or (".module+el" in _source_tag):
+                if (".module_el" in str(_source_tag)) or (".module+el" in str(_source_tag)):
                     _dist = self.parse_module_git_tag(str(_source_tag))[-1]
                 else:
                     _dist = self.parse_git_tag(str(_source_tag))[-1]
