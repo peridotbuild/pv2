@@ -69,8 +69,8 @@ class Import:
     _branch_versions: dict = field(default_factory=dict)
     _package_checksum: Optional[str] = 'Unknown'
 
-    _side_commit_hash: Optional[str] = None
-    _side_package_version: Optional[str] = None
+    _side_commit_hash: Optional[str] = ''
+    _side_package_version: Optional[str] = ''
 
     @staticmethod
     def remove_everything(local_repo_path):
@@ -391,6 +391,17 @@ class Import:
         Parses a git tag and returns a tuple
         """
         pattern = re.compile(r'^(?P<import>imports\/[\w-]+\/)?(?P<name>[\w\.-]+)-(?P<version>[\w~%.+]+)-(?P<release>[\w.]+?)(?P<dist>\.\w+)(?:\.\d+(?:\.\d+)*)?$')
+        check = pattern.match(git_tag)
+        if not check:
+            return None
+        return check.groups()
+
+    @staticmethod
+    def parse_module_git_tag(git_tag):
+        """
+        Parses a git tag and returns a tuple (modules)
+        """
+        pattern = re.compile(r'^(?P<import>imports\/[\w-]+\/)?(?P<name>[\w\.-]+)-(?P<version>[\w~%.+]+)-(?P<release>[\w.]+?)(?P<dist>\.module\+el\d(?:\.\d+\.\w+)?\+\w+\+\w+)(?:\.\d+(?:\.\d+)*)?')
         check = pattern.match(git_tag)
         if not check:
             return None
