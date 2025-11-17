@@ -129,8 +129,8 @@ class ModuleImport(Import):
             pvlog.logger.warning('An unexpected issue occurred: %s', exc)
             sys.exit(2)
 
-        pvlog.logger.info('Checking if destination branch exists: %s %s',
-                          self.package, self.dest_branch)
+        pvlog.logger.info('Checking if destination branch exists: %s %s %s',
+                          self.package, self.dest_branch, rpm)
         try:
             if "rpm-local-generator-support" in rpm:
                 gitutil.ref_check(check_dest_repo, f"{self.dest_branch_prefix}{self.release_ver}{self.dest_branch_suffix}")
