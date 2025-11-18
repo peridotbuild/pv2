@@ -162,8 +162,12 @@ class RpmImport(Import):
         Gets the checksum from the destination
         """
         met = Path(repo_path) / f'.{self.rpm_name}.checksum'
-        with open(met, 'r') as fp:
-            content = fp.read()
+        met_exists = fileutil.file_exists_local(met)
+        if met_exists:
+            with open(met, 'r') as fp:
+                content = fp.read()
+        else:
+            content = 'No checksum found'
 
         return content.strip()
 
