@@ -401,7 +401,7 @@ class Import:
         """
         Parses a git tag and returns a tuple (modules)
         """
-        pattern = re.compile(r'^(?P<import>imports\/[\w-]+\/)?(?P<name>[\w\.-]+)-(?P<version>[\w~%.+]+)-(?P<release>[\w.]+?)(?P<dist>\.module[\+_]el\d(?:\.\d+\.\w+)?\+\w+\+\w+)(?:\.\d+(?:\.\d+)*)?')
+        pattern = re.compile(r'^(?P<import>imports\/[\w\.-]+\/)?(?P<name>[\w\.-]+)-(?P<version>[\w~%.+]+)-(?P<release>[\w.]+?)(?P<dist>\.module[\+_]el\d(?:\.\d+\.\w+)?\+\w+\+\w+)(?:\.\d+(?:\.\d+)*)?')
         check = pattern.match(git_tag)
         if not check:
             return None
