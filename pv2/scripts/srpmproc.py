@@ -89,6 +89,7 @@ def main():
     """
     Run the main program
     """
+    returned = None
     if command == 'rpm':
         classy = srpmproc(
                 package=results.name,
@@ -118,7 +119,7 @@ def main():
                 skip_sources=results.skip_sources,
                 preconv_names=results.preconv_names,
         )
-        classy.pkg_import()
+        returned = classy.pkg_import()
     elif command == 'module':
         classy = srpmproc_module(
                 module=results.module,
@@ -141,10 +142,12 @@ def main():
                 dest_branch_suffix=results.dest_branch_suffix,
                 overwrite_tags=results.overwrite_tag,
         )
-        classy.pkg_import()
+        returned = classy.pkg_import()
 
     else:
         print('Unknown command')
+
+    print(returned)
 
 if __name__ == '__main__':
     main()
