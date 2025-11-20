@@ -13,7 +13,8 @@ from pv2.util import rpmutil
 def generate_patch_line(
         patch_name: str,
         patch_number: str,
-        directive_type: rpmconst.RpmSpecPatchTypes
+        directive_type: rpmconst.RpmSpecPatchTypes,
+        no_backup: bool = False
     ) -> str:
     """
     Generates a patch line
@@ -29,6 +30,9 @@ def generate_patch_line(
         patch_line = f"ApplyPatch {patch_name}.patch"
     else:
         raise err.RpmParseError("Unknown patch type")
+
+    if not no_backup and directive_type != rpmconst.RpmSpecPatchTypes.KERNEL:
+        patch_line += f" -b .{patch_name}"
 
     return patch_line
 

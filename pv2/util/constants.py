@@ -59,6 +59,8 @@ class RpmConstants:
 #   RPM_SPEC_DIRECTIVE_PATCH = "Patch"
 #   RPM_SPEC_DIRECTIVE_SOURCE = "Source"
 
+    RPM_AUTORELEASE_FINAL_LINE = '}%{?-e:.%{-e*}}%{?-s:.%{-s*}}%{!?-n:%{?dist}}'
+
     class RpmSpecPatchTypes(Enum):
         """
         Patch types

@@ -334,6 +334,7 @@ class AppendRelease(Action):
         """
         The executed action
         """
+        modified = False
         if not self.data['enabled']:
             pvlog.logger.info("Release modification disabled")
             return
@@ -344,15 +345,24 @@ class AppendRelease(Action):
         pvlog.logger.info("Modifying release line")
 
         if autorelease:
-            pvlog.logger.warning("%autorelease found, skipping")
-            return
+            pvlog.logger.warning("%autorelease found, modification may be incomplete")
+            #return
 
         for i, line in enumerate(file):
-            if rpmutil.spec_line_release(line):
-                file[i] += self.data['suffix']
-                break
-        else:
-            raise err.NotAppliedError("Release: There was no release line found.")
+            if autorelease:
+                if rpmconst.RPM_AUTORELEASE_FINAL_LINE in line:
+                    file[i] += self.data['suffix']
+                    modified = True
+                    break
+            else:
+                if rpmutil.spec_line_release(line):
+                    file[i] += self.data['suffix']
+                    modified = True
+
+        if not modified:
+            msg = "Release: We were not able to modify the autorelease." if autorelease \
+                    else "Release: There were no release lines found."
+            raise err.NotAppliedError(msg)
 
         generic.write_file_from_list(file_path, file)
 
