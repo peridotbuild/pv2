@@ -119,6 +119,30 @@ class Action:
         return False
 
     @staticmethod
+    def __find_indent(line: str) -> str:
+        """
+        Get the indent of a line
+        """
+        return line[:len(line) - len(line.lstrip())]
+
+    @staticmethod
+    def __apply_indent(lines: list[str], starting: str) -> list[str]:
+        """
+        Applies the found indentation
+        """
+        if not lines:
+            return lines
+
+        indent_lines = [lines[0]]
+        for line in lines[1:]:
+            if line.strip():
+                indent_lines.append(starting + line)
+            else:
+                indent_lines.append(line)
+
+        return indent_lines
+
+    @staticmethod
     def __process_single_line(file, i, current_line, find,
                               replace_lines, counter, count):
         """
@@ -126,6 +150,7 @@ class Action:
         """
         changed = False
         count_in_line = current_line.count(find)
+        to_replace_lines = None
         if count_in_line > 0:
             if count != -1 and counter >= count:
                 return changed, counter
@@ -137,8 +162,15 @@ class Action:
                     pvlog.logger.info("Deleted line: '%s' on line %s", find, i + 1)
                     return True, counter
 
-            file[i] = current_line.replace(find, "\n".join(replace_lines) if replace_lines else "", 1)
-            pvlog.logger.info("Replaced line(s): '%s' on line %s", replace_lines, i + 1)
+            else:
+                if file[i] == find:
+                    to_replace_lines = replace_lines
+                else:
+                    indent = Action.__find_indent(file[i])
+                    to_replace_lines = Action.__apply_indent(replace_lines, indent)
+
+            file[i] = current_line.replace(find, "\n".join(to_replace_lines) if to_replace_lines else "", 1)
+            pvlog.logger.info("Replaced line(s): '%s' on line %s", to_replace_lines, i + 1)
             counter += 1
             changed = True
 
@@ -180,8 +212,8 @@ class Action:
                 del file[i:i + len(find_lines)]
                 pvlog.logger.info("Deleted block of lines: %s-%s", i + 1, i + len(find_lines))
             else:
-                indent = len(file[i]) - len(file[i].lstrip())
-                formatted_repl_lines = [(file[i][:indent] + line) for line in replace_lines]
+                indent = Action.__find_indent(file[i])
+                formatted_repl_lines = [indent + line for line in replace_lines]
                 file[i:i + len(find_lines)] = formatted_repl_lines
                 pvlog.logger.info(
                         "Replaced lines: %s-%s with %s",
