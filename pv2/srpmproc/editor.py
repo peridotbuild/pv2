@@ -201,7 +201,8 @@ class Action:
         Processes multiline find and replace
         """
         changed = False
-        stripped_block = [line.lstrip() for line in file[i:i + len(find_lines)]]
+        block = file[i:i + len(find_lines)]
+        stripped_block = [line.lstrip() for line in block]
         stripped_find_lines = [line.lstrip() for line in find_lines]
 
         if stripped_block == stripped_find_lines:
@@ -212,8 +213,19 @@ class Action:
                 del file[i:i + len(find_lines)]
                 pvlog.logger.info("Deleted block of lines: %s-%s", i + 1, i + len(find_lines))
             else:
-                indent = Action.__find_indent(file[i])
-                formatted_repl_lines = [indent + line for line in replace_lines]
+                indents = [Action.__find_indent(file[i]) for line in block]
+                formatted_repl_lines = []
+                for idx, line in enumerate(replace_lines):
+                    if idx < len(indents):
+                        base_indent = indents[idx]
+                    else:
+                        base_indent = indents[-1]
+
+                    if line.strip():
+                        formatted_repl_lines.append(base_indent + line)
+                    else:
+                        formatted_repl_lines.append(line)
+
                 file[i:i + len(find_lines)] = formatted_repl_lines
                 pvlog.logger.info(
                         "Replaced lines: %s-%s with %s",
@@ -223,7 +235,7 @@ class Action:
 
             counter += 1
             changed = True
-            i += len(replace_lines) - 1
+            #i += len(replace_lines) - 1
 
         return changed, counter
 
