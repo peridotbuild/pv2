@@ -213,18 +213,18 @@ class Action:
                 del file[i:i + len(find_lines)]
                 pvlog.logger.info("Deleted block of lines: %s-%s", i + 1, i + len(find_lines))
             else:
-                indents = [Action.__find_indent(file[i]) for line in block]
+                indents = [Action.__find_indent(line) for line in block]
                 formatted_repl_lines = []
-                for idx, line in enumerate(replace_lines):
+                for idx, repl in enumerate(replace_lines):
                     if idx < len(indents):
                         base_indent = indents[idx]
                     else:
                         base_indent = indents[-1]
 
-                    if line.strip():
-                        formatted_repl_lines.append(base_indent + line)
+                    if repl.strip():
+                        formatted_repl_lines.append(base_indent + repl)
                     else:
-                        formatted_repl_lines.append(line)
+                        formatted_repl_lines.append(repl)
 
                 file[i:i + len(find_lines)] = formatted_repl_lines
                 pvlog.logger.info(
