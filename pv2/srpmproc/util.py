@@ -73,7 +73,7 @@ def get_last_directive(
     if last_number is None:
         if directive_type == rpmconst.RpmSpecDirectives.PATCH:
             pvlog.logger.warning("There were no %s directives found", directive_type.value)
-            pvlog.logger.warning("We will attempt to add a new directive")
+            pvlog.logger.warning("We will attempt to add a new directive - It may appear in a strange spot.")
         else:
             raise err.RpmParseError("Unable to parse, there was no {directive_type.value} found")
 

@@ -37,5 +37,8 @@ Add the ability to have a comment on inserted lines around patch/source. There
 should be a default one (e.g. "pv2 applied patch") and if a comment is specified
 it can be appended or a secondary line added.
 
-# October 20, 2025
-Allow tag appending on %autorelease, but it needs to be appended to another place.
+# December 28, 2025
+Indentation is kind of weird when doing SNR. Make sure to document this oddity.
+
+Also, seems like the editor isn't taking into account pushd/popd blocks. Might
+need to fix that.

@@ -1133,7 +1133,7 @@ class GitHandler:
         tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
         if patched:
             tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
-            commit_msg += ' (patched by pv2)'
+            commit_msg += const.GitConstants.PATCHED_MESSAGE
 
         if tag in repo.tags:
             pvlog.logger.warning('!! Tag already exists !!')

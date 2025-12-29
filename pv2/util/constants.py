@@ -251,3 +251,5 @@ class GitConstants:
     FEDORA_LOOKASIDE_PATH = 'https://src.fedoraproject.org/repo/pkgs/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${HASH}/${FILENAME}'
     ROCKY8_LOOKASIDE_PATH = 'https://rocky-linux-sources-staging.a1.rockylinux.org/${HASH}'
     ROCKY_LOOKASIDE_PATH = 'https://sources.build.resf.org/${HASH}'
+    PATCHED_MESSAGE = ' (patched by pv2)'
+    UNPATCHED_MESSAGE = ' (no patch applied)'
