@@ -117,6 +117,83 @@ def commit_empty(repo, message: str):
     except gitexc.CommandError as exc:
         raise err.GitCommitError('Unable to create commit') from exc
 
+def change_summary(repo: Repo):
+    """
+    Generates a change summary
+    """
+    # Orphaned or not
+    head = repo.head.commit if repo.head.is_valid() else None
+
+    if head is None:
+        # This is a fallback. Repo states may vary.
+        # This assumes this is an orphaned repository, so the "valid" state is
+        # false. As a result, we assume none and everything there is staged.
+        diffs = repo.index.diff(None, staged=True)
+    else:
+        diffs = repo.index.diff(head)
+
+    added, deleted, modified, renamed = [], [], [], []
+
+    # a_path is the old path
+    # b_path is the new path
+    for diff in diffs:
+        ct = diff.change_type
+        # Append
+        if ct == "A":
+            added.append(diff.b_path)
+        # Deleted
+        elif ct == "D":
+            deleted.append(diff.a_path)
+        # Modified
+        elif ct == "M":
+            modified.append(diff.b_path)
+        # Renamed
+        elif ct == "R":
+            renamed.append(f"{diff.a_path} -> {diff.b_path}")
+        else:
+            modified.append(diff.b_path or diff.a_path)
+
+    return {
+            "added": sorted(added),
+            "deleted": sorted(deleted),
+            "modified": sorted(modified),
+            "renamed": sorted(renamed)
+    }
+
+def format_change_section(summary: dict) -> str:
+    """
+    Generate proper formatting for the change body
+    """
+    lines = ["Changes:"]
+    for key, title in (("added", "Added"),
+                       ("deleted", "Deleted"),
+                       ("modified", "Modified"),
+                       ("renamed", "Renamed")):
+
+        items = summary.get(key, [])
+
+        if not items:
+            continue
+
+        omit_items = len(items) > 20
+        lines.append(f"- {title} ({len(items)}):")
+        if omit_items:
+            lines.append("  (List too long, see diff)")
+        else:
+            lines.extend([f"  - {p}" for p in items])
+    return "\n".join(lines)
+
+def format_commit(summary: str, body: list[str] = None) -> str:
+    """
+    Formats a commit message
+
+    Summary is the title. The body is expected to be a list if needed.
+    """
+    if not body:
+        return summary
+
+    return summary + "\n\n" + "\n".join(body)
+
 def init(
         git_url_path: str,
         repo_name: str,

@@ -270,7 +270,7 @@ class GitImport(Import):
             self.generate_filesum(_dest.working_dir, self.rpm_name, f"Direct Git Import ({self.source_git_host})")
             self.__upload_artifacts(_lookasides)
 
-            msg = f'import {nvr}'
+            msg = f'import {nvr} (git)'
             pvlog.logger.info('Importing: %s', nvr)
             commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, nvr, False, self.overwrite_tags)
 
