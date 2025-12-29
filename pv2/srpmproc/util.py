@@ -27,7 +27,7 @@ def generate_patch_line(
     elif directive_type == rpmconst.RpmSpecPatchTypes.P_NOSPACE:
         patch_line = f"%patch -P{patch_number} -p1"
     elif directive_type == rpmconst.RpmSpecPatchTypes.KERNEL:
-        patch_line = f"ApplyPatch {patch_name}.patch"
+        patch_line = f"ApplyOptionalPatch {patch_name}.patch"
     else:
         raise err.RpmParseError("Unknown patch type")
 
