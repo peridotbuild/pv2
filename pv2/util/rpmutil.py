@@ -452,6 +452,7 @@ def spec_parse(spec_file_path, dist: str = "%{nil}", release: str = None) -> lis
                 --define "ldconfig_scriptlets(n:) %{nil}" \
                 --define "pesign %{nil}" \
                 --define "efi_has_alt_arch 0" \
+                --define "_fortify_level 0" \
                 --define "rhel <value or %{nil}" \
                 --define "centos <value or %{nil}" \
                 --define "rocky <value or %{nil}"

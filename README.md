@@ -62,6 +62,7 @@ repository.
 
 * Python 3.9 or higher
 * rpm-build + \*-(s)rpm-macros
+* redhat-rpm-config
 * A few python modules
 
   * file-magic (python3-file-magic)

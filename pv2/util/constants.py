@@ -38,7 +38,7 @@ class RpmConstants:
         11: 'SHA224'
     }
 
-    # rpmspec will be used in niche scenarios. several things here are set to
+    # rpmspec will be used in import scenarios. several things here are set to
     # %{nil} because there cases where some spec files can't be parsed properly
     # without the macros existing, depending on how the system was setup.
     RPMSPEC_DEFINITIONS = {
@@ -48,6 +48,7 @@ class RpmConstants:
         "ldconfig_scriptlets(n:)": "%{nil}",
         "pesign": "%{nil}",      # some SB packages don't parse without this set
         "efi_has_alt_arch": "0", # some arches simply don't have efi, so always 0
+        "_fortify_level": "0",   # macro does not exist on 9 import boxes
     }
 
 #   RPM_PATCH_OBSOLETE = 0
