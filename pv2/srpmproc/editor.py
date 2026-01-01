@@ -465,7 +465,7 @@ class AddFile(Action):
     allowed_keys = {
             "type": str,
             "name": str,
-            "source_name": str,
+            "source_filename": str,
             "number": str,
             "add_to_spec": bool,
             "upload": bool
@@ -516,7 +516,7 @@ class AddFile(Action):
         The executed action
         """
         name = self.data['name']
-        source_override = self.data.get("source_name") or None
+        source_override = self.data.get("source_filename") or None
         filetype = self.data['type']
         number = self.data['number'] if self.data['number'] != "latest" else -1
 
