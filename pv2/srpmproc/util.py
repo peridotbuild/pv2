@@ -50,10 +50,10 @@ def get_last_directive(
 
     # Check for the conditional blocks
     for i, line in enumerate(spec_data):
-        if re.match(r"^%endif\b", line):
+        if re.match(r"^%endif\b", line) or re.match(r"^popd\b", line):
             conditional = True
             last_endif_idx = i - 1
-        elif re.match(r"^%if*", line) and conditional:
+        elif (re.match(r"^%if*", line) or re.match(r"^pushd*", line)) and conditional:
             conditional = False
 
         result = re.match(rf"{directive_type.value}([0-9]*):", line)
@@ -67,13 +67,18 @@ def get_last_directive(
                 no_numbers = True
             break
 
+    # This is supposed to adjust things after the last endif, but sometimes
+    # that doesn't happen.
     if last_idx is None and last_endif_idx is not None:
         last_idx = last_endif_idx
 
+    # Like here, this sometimes goes off the rails and decides to place new
+    # patch directives in a weird place.
     if last_number is None:
         if directive_type == rpmconst.RpmSpecDirectives.PATCH:
             pvlog.logger.warning("There were no %s directives found", directive_type.value)
             pvlog.logger.warning("We will attempt to add a new directive - It may appear in a strange spot.")
+            pvlog.logger.warning("You will need to verify this.")
         else:
             raise err.RpmParseError("Unable to parse, there was no {directive_type.value} found")
 
