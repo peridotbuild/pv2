@@ -1142,6 +1142,10 @@ class GitHandler:
             # pvlog.logger.warning('Overwriting tag...')
             # raise err.GitApplyError('Overwriting is not supported yet')
 
+        pvlog.logger.info('Cataloging changes...')
+        diff_catalog = gitutil.change_summary(repo)
+        diff_format = gitutil.format_change_section(diff_catalog)
+        full_commit_msg = gitutil.format_commit(commit_msg, diff_format)
         pvlog.logger.info('Attempting to commit and tag...')
         gitutil.add_all(repo)
         verify = repo.is_dirty()
@@ -1149,7 +1153,7 @@ class GitHandler:
             gitutil.commit(repo, commit_msg)
             if self.overwrite_tags:
                 pvlog.logger.warning('!! Tag will be overwritten !!')
-            ref = gitutil.tag(repo, tag, commit_msg, force)
+            ref = gitutil.tag(repo, tag, full_commit_msg, force)
             pvlog.logger.info('Tag: %s', tag)
             return True, str(repo.head.commit), ref
         pvlog.logger.info('No changes found.')

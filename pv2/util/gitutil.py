@@ -24,7 +24,10 @@ __all__ = [
         'tag',
         'get_current_commit',
         'get_current_tag',
-        'ref_check'
+        'ref_check',
+        'change_summary',
+        'format_commit',
+        'format_change_section'
 ]
 
 def add_all(repo):
@@ -117,7 +120,7 @@ def commit_empty(repo, message: str):
     except gitexc.CommandError as exc:
         raise err.GitCommitError('Unable to create commit') from exc
 
-def change_summary(repo: Repo):
+def change_summary(repo: Repo) -> dict:
     """
     Generates a change summary
     """
@@ -160,9 +163,11 @@ def change_summary(repo: Repo):
             "renamed": sorted(renamed)
     }
 
-def format_change_section(summary: dict) -> str:
+def format_change_section(summary: dict, max_lines: int = 20) -> str:
     """
     Generate proper formatting for the change body
+
+    Max lines can be modified
     """
     lines = ["Changes:"]
     for key, title in (("added", "Added"),
@@ -175,7 +180,7 @@ def format_change_section(summary: dict) -> str:
         if not items:
             continue
 
-        omit_items = len(items) > 20
+        omit_items = len(items) > max_lines
         lines.append(f"- {title} ({len(items)}):")
         if omit_items:
             lines.append("  (List too long, see diff)")
