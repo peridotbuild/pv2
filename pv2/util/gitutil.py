@@ -27,8 +27,7 @@ __all__ = [
         'ref_check',
         'change_summary',
         'format_commit',
-        'format_change_section',
-        'message_formatter'
+        'format_change_section'
 ]
 
 def add_all(repo):
