@@ -4,11 +4,10 @@
 Importer accessories
 """
 
-import os
 import sys
 import re
 from functools import cached_property
-from pv2.util import gitutil, fileutil, generic
+from pv2.util import fileutil
 from pv2.util import error as err
 from pv2.util import log as pvlog
 from . import Import
@@ -167,7 +166,11 @@ class SrpmImport(Import):
             self.generate_filesum(_dest.working_dir, self.rpm_name, self.srpm_hash)
             self.__upload_artifacts(_lookasides)
 
-            msg = f'import {nvr} (srpm)'
+            msg = "\n".join([
+                f"import {nvr} (srpm)", "",
+                f"Package Hash: {self.srpm_hash}",
+                f"Vendor: {self.__srpm_metadata['vendor']}",
+            ])
             pvlog.logger.info('Importing: %s', nvr)
             commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, nvr, False, self.overwrite_tags)
 

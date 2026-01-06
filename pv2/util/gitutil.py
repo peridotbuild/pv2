@@ -27,7 +27,8 @@ __all__ = [
         'ref_check',
         'change_summary',
         'format_commit',
-        'format_change_section'
+        'format_change_section',
+        'message_formatter'
 ]
 
 def add_all(repo):
@@ -163,7 +164,7 @@ def change_summary(repo: Repo) -> dict:
             "renamed": sorted(renamed)
     }
 
-def format_change_section(summary: dict, max_lines: int = 20) -> str:
+def format_change_section(summary: dict, max_lines: int = 20) -> list[str]:
     """
     Generate proper formatting for the change body
 
@@ -186,7 +187,7 @@ def format_change_section(summary: dict, max_lines: int = 20) -> str:
             lines.append("  (List too long, see diff)")
         else:
             lines.extend([f"  - {p}" for p in items])
-    return "\n".join(lines)
+    return lines
 
 def format_commit(summary: str, body: list[str] = None) -> str:
     """

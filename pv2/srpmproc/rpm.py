@@ -12,6 +12,7 @@ from pv2.util import error as err
 from pv2.util import uploader as upload
 #from pv2.util.constants import RpmConstants as rpmconst
 from pv2.importer.operation import Import, GitHandler
+from pv2.util import constants as const
 from .editor import Config
 
 __all__ = ['RpmImport']
@@ -257,7 +258,7 @@ class RpmImport(Import):
 
             # This is the absolute final dist override
             if self.distcustom:
-                _dist = self.distcustom
+                _dist = f'.{self.distcustom}'
 
             # Remove everything from the destination, copy, and patch
             pvlog.logger.info('Copying package data')
@@ -276,7 +277,16 @@ class RpmImport(Import):
             evr_dict = self.get_evr_dict(_dest_spec, _dist)
             evr = "{version}-{release}".format(**evr_dict)
             nvr = f"{self.rpm_name}-{evr}"
-            msg = f'import {nvr} (pv2)'
+            summary = f'import {nvr} (pv2)'
+            if patched:
+                summary += const.GitConstants.PATCHED_MESSAGE
+
+            msg = "\n".join([
+                summary, "",
+                f"Original Hash: {checksum_from_pkg}",
+                f"Patched: {str(patched)}",
+            ])
+
             pvlog.logger.info('Importing: %s', nvr)
             commit_res, commit_hash, commit_ref = self.git.commit_and_tag(_dest, msg, nvr, patched, self.overwrite_tags)
             if commit_res:

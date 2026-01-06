@@ -1,6 +1,6 @@
 [project]
 name = "pv2"
-version = "0.15.3"
+version = "0.15.4"
 description = "PV2 backend framework module"
 readme = "README.md"
 authors = [

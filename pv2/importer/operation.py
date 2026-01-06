@@ -72,6 +72,8 @@ class Import:
     _side_commit_hash: Optional[str] = ''
     _side_package_version: Optional[str] = ''
 
+    _no_cleanup: Optional[bool] = False
+
     @staticmethod
     def remove_everything(local_repo_path):
         """
@@ -899,6 +901,13 @@ class Import:
         """
         return self._local_path
 
+    @property
+    def no_cleanup(self):
+        """
+        Returns if cleanup will occur
+        """
+        return self._no_cleanup
+
     ##########################################################################
     # Sideport properties
     @property
@@ -1133,7 +1142,6 @@ class GitHandler:
         tag = generic.safe_encoding(f'imports/{self.dest_branch}/{nevra}')
         if patched:
             tag = generic.safe_encoding(f'patched/{self.dest_branch}/{nevra}')
-            commit_msg += const.GitConstants.PATCHED_MESSAGE
 
         if tag in repo.tags:
             pvlog.logger.warning('!! Tag already exists !!')
@@ -1142,15 +1150,15 @@ class GitHandler:
             # pvlog.logger.warning('Overwriting tag...')
             # raise err.GitApplyError('Overwriting is not supported yet')
 
-        pvlog.logger.info('Cataloging changes...')
-        diff_catalog = gitutil.change_summary(repo)
-        diff_format = gitutil.format_change_section(diff_catalog)
-        full_commit_msg = gitutil.format_commit(commit_msg, diff_format)
-        pvlog.logger.info('Attempting to commit and tag...')
         gitutil.add_all(repo)
+        pvlog.logger.info('Attempting to commit and tag...')
         verify = repo.is_dirty()
         if verify:
-            gitutil.commit(repo, commit_msg)
+            pvlog.logger.info('Cataloging changes...')
+            diff_catalog = gitutil.change_summary(repo)
+            diff_format = gitutil.format_change_section(diff_catalog)
+            full_commit_msg = gitutil.format_commit(commit_msg, diff_format)
+            gitutil.commit(repo, full_commit_msg)
             if self.overwrite_tags:
                 pvlog.logger.warning('!! Tag will be overwritten !!')
             ref = gitutil.tag(repo, tag, full_commit_msg, force)
