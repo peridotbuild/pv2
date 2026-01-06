@@ -152,7 +152,7 @@ def change_summary(repo: Repo) -> dict:
             modified.append(diff.b_path)
         # Renamed
         elif ct == "R":
-            renamed.append(f"{diff.a_path} -> {diff.b_path}")
+            renamed.append(f"{diff.b_path} -> {diff.a_path}")
         else:
             modified.append(diff.b_path or diff.a_path)
 
