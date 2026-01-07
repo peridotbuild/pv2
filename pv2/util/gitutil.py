@@ -124,35 +124,44 @@ def change_summary(repo: Repo) -> dict:
     """
     Generates a change summary
     """
+    diffs = repo.index.diff(None, staged=True)
     # Orphaned or not
-    head = repo.head.commit if repo.head.is_valid() else None
+    #head = repo.head.commit if repo.head.is_valid() else None
 
-    if head is None:
-        # This is a fallback. Repo states may vary.
-        # This assumes this is an orphaned repository, so the "valid" state is
-        # false. As a result, we assume none and everything there is staged.
-        diffs = repo.index.diff(None, staged=True)
-    else:
-        diffs = repo.index.diff(head)
+    #if head is None:
+    #    # This is a fallback. Repo states may vary.
+    #    # This assumes this is an orphaned repository, so the "valid" state is
+    #    # false. As a result, we assume none and everything there is staged.
+    #    diffs = repo.index.diff(None, staged=True)
+    #else:
+    #    diffs = repo.index.diff("HEAD")
 
     added, deleted, modified, renamed = [], [], [], []
 
     # a_path is the old path
     # b_path is the new path
     for diff in diffs:
-        ct = diff.change_type
+        ct = getattr(diff, "change_type", None)
         # Append
         if ct == "A":
-            added.append(diff.b_path)
+            if diff.b_path:
+                added.append(diff.b_path)
         # Deleted
         elif ct == "D":
-            deleted.append(diff.a_path)
+            if diff.a_path:
+                deleted.append(diff.a_path)
         # Modified
         elif ct == "M":
-            modified.append(diff.b_path)
+            if diff.b_path:
+                modified.append(diff.b_path)
+            elif diff.a_path:
+                modified.append(diff.a_path)
         # Renamed
         elif ct == "R":
-            renamed.append(f"{diff.b_path} -> {diff.a_path}")
+            if diff.a_path and diff.b_path:
+                renamed.append(f"{diff.a_path} -> {diff.b_path}")
+            else:
+                renamed.append(f"{diff.a_path or '?'} -> {diff.b_path or '?'}")
         else:
             modified.append(diff.b_path or diff.a_path)
 
