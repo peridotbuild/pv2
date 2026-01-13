@@ -265,6 +265,7 @@ def add_new_source(
         directive_type: rpmconst.RpmSpecDirectives,
         package_name: str,
         patch_file: bool,
+        no_prep: bool = False,
         source_number: int = -1) -> None:
     """
     Adds the new source file to the RPM spec file
@@ -289,8 +290,10 @@ def add_new_source(
     # If there is a patch file, there is a very good chance patches aren't
     # being applied one-by-one in the spec file. We're going to skip adding a
     # patch line.
+    # We will also make it possible to set where the patch can be applied in
+    # SNR because the editor will sometimes do weird stuff.
     if (directive_type == rpmconst.RpmSpecDirectives.PATCH and
-        patch_type != rpmconst.RpmSpecPatchTypes.INC_FILE):
+        patch_type != rpmconst.RpmSpecPatchTypes.INC_FILE) and not no_prep:
         add_patch_line(spec_data, source_name, patch_type, new_number)
 
     spec_data.reverse()

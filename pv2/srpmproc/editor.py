@@ -468,6 +468,7 @@ class AddFile(Action):
             "source_filename": str,
             "number": str,
             "add_to_spec": bool,
+            "no_prep": bool,
             "upload": bool
     }
     valid_types = {"patch", "source"}
@@ -524,6 +525,9 @@ class AddFile(Action):
         add_to_spec = self.data.get('add_to_spec', True)
 
         # If no value is set, the answer is ALWAYS false.
+        no_prep = self.data.get('no_prep', False)
+
+        # If no value is set, the answer is ALWAYS false.
         upload_to_lookaside = self.data.get('upload', False)
 
         package_name = package_path.name
@@ -546,6 +550,7 @@ class AddFile(Action):
                     directive_type,
                     package_name,
                     patches_file,
+                    no_prep,
                     number
             )
 
