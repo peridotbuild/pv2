@@ -121,7 +121,20 @@ class Import:
         )
 
         if len(file_list) > 1:
-            raise err.ConfigurationError('This repo has more than one spec file.')
+            pvlog.logger.warning('This repo has more than one spec file, checking for actual spec file...')
+
+            # This is a dumb hack - when we import from CS, they will have a
+            # tests and plan directory in some repos. On rare occasions, there
+            # is a testing spec file in those directories that we are catching
+            # on accident. We need to make sure we're not catching those.
+            for tests in file_list:
+                if 'tests' in tests:
+                    file_list.pop()
+                if 'plans' in tests:
+                    file_list.pop()
+
+            if len(file_list) > 1:
+                raise err.ConfigurationError('This repo has more than one spec file.')
 
         if len(file_list) == 0:
             raise err.ConfigurationError('This repo has no spec files.')
