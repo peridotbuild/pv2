@@ -127,14 +127,18 @@ class Import:
             # tests and plan directory in some repos. On rare occasions, there
             # is a testing spec file in those directories that we are catching
             # on accident. We need to make sure we're not catching those.
+            new_list = []
             for tests in file_list:
                 if 'tests' in tests:
-                    file_list.pop()
+                    continue
                 if 'plans' in tests:
-                    file_list.pop()
+                    continue
+                new_list.append(tests)
 
-            if len(file_list) > 1:
+            if len(new_list) > 1:
                 raise err.ConfigurationError('This repo has more than one spec file.')
+
+            file_list = new_list
 
         if len(file_list) == 0:
             raise err.ConfigurationError('This repo has no spec files.')
