@@ -44,7 +44,7 @@ class RpmConstants:
     RPMSPEC_DEFINITIONS = {
         "__python3": "/usr/bin/python3",
         "forgemeta": "%{nil}",
-        "gometa": "%{nil}",
+        "gometa(az:svifL)": "%{nil}",
         "ldconfig_scriptlets(n:)": "%{nil}",
         "pesign": "%{nil}",      # some SB packages don't parse without this set
         "efi_has_alt_arch": "0", # some arches simply don't have efi, so always 0
