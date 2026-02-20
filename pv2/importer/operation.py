@@ -546,8 +546,9 @@ class Import:
                 raise err.ConfigurationError(f'metadata files are not supported with {self.upstream_lookaside}')
             metafile_to_use = self.metadata_file
         elif os.path.exists(self.sources_file):
-            no_sources_list = ['rocky', 'centos']
-            if any(ignore in self.upstream_lookaside for ignore in no_sources_list):
+            no_sources_list = ['rocky', 'centos', 'rocky8']
+            #if any(ignore in self.upstream_lookaside for ignore in no_sources_list):
+            if self.upstream_lookaside in no_sources_list:
                 # pylint: disable=line-too-long
                 raise err.ConfigurationError(f'sources files are not supported with {self.upstream_lookaside}')
             metafile_to_use = self.sources_file
