@@ -246,8 +246,9 @@ class GitConstants:
     All git related constants
     """
 
-    CENTOS_LOOKASIDE_PATH = 'https://git.centos.org/sources/${PKG_NAME}/${BRANCH}/${HASH}'
     # pylint: disable=line-too-long
+    CENTOS_LOOKASIDE_PATH = 'https://git.centos.org/sources/${PKG_NAME}/${BRANCH}/${HASH}'
+    CENTOS_SIG_LOOKASIDE_PATH = 'https://git.centos.org/sources/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${HASH}/${FILENAME}'
     STREAM_LOOKASIDE_PATH = 'https://sources.stream.centos.org/sources/rpms/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${HASH}/${FILENAME}'
     FEDORA_LOOKASIDE_PATH = 'https://src.fedoraproject.org/repo/pkgs/${PKG_NAME}/${FILENAME}/${HASH_TYPE}/${HASH}/${FILENAME}'
     ROCKY8_LOOKASIDE_PATH = 'https://rocky-linux-sources-staging.a1.rockylinux.org/${HASH}'

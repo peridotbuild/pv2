@@ -371,6 +371,7 @@ class Import:
                 'rocky8': const.GitConstants.ROCKY8_LOOKASIDE_PATH,
                 'rocky': const.GitConstants.ROCKY_LOOKASIDE_PATH,
                 'centos': const.GitConstants.CENTOS_LOOKASIDE_PATH,
+                'centossig': const.GitConstants.CENTOS_SIG_LOOKASIDE_PATH,
                 'stream': const.GitConstants.STREAM_LOOKASIDE_PATH,
                 'fedora': const.GitConstants.FEDORA_LOOKASIDE_PATH,
         }.get(source, None)
