@@ -49,7 +49,7 @@ git_parser.add_argument('--distprefix', type=str, required=False, default='el')
 git_parser.add_argument('--distcustom', type=str, required=False)
 git_parser.add_argument('--dest-lookaside', type=str, required=False, default='/var/www/html/sources')
 git_parser.add_argument('--upstream-lookaside',
-                        choices=('rocky8', 'rocky', 'centos', 'stream', 'fedora'),
+                        choices=('rocky8', 'rocky', 'centos', 'centossig', 'stream', 'fedora'),
                         required=True)
 git_parser.add_argument('--alternate-spec-name',
                         type=str, required=False,
