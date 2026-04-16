@@ -85,6 +85,10 @@ class RpmImport(Import):
                 _aws_use_ssl=aws_use_ssl,
                 _local_path=local_path,
                 _upstream_lookaside=upstream_lookaside,
+                _source_branch_prefix=source_branch_prefix,
+                _source_branch_suffix=source_branch_suffix,
+                _dest_branch_prefix=dest_branch_prefix,
+                _dest_branch_suffix=dest_branch_suffix,
         )
         self.__rpm_name = package
         if preconv_names:
@@ -216,6 +220,21 @@ class RpmImport(Import):
                 patch_config_list.append(branch_yaml)
             else:
                 pvlog.logger.info('No %s.yml found', self.dest_branch)
+
+            if not branch_yaml_exists:
+                # If the branch has a suffix (e.g. r10-beta), try without it (e.g. r10)
+                pvlog.logger.info("DEBUG :: self._dest_branch_suffix == " + str(self._dest_branch_suffix))
+                pvlog.logger.info("DEBUG :: self._release == " + str(self._release))
+                if self._dest_branch_suffix:
+                    fallback_branch = f'{self._dest_branch_prefix}{self._release}'
+                    pvlog.logger.info('Trying fallback %s.yml patch file', fallback_branch)
+                    branch_yaml = self.__find_single_yaml(self.dest_patch_clone_path,
+                                                          f'{fallback_branch}.yml')
+                    if branch_yaml:
+                        branch_yaml_exists = True
+                        patch_config_list.append(branch_yaml)
+                    else:
+                        pvlog.logger.info('No %s.yml found', fallback_branch)
 
         # Apply patch list
         for patch_path in patch_config_list:
