@@ -42,6 +42,7 @@ class RpmImport(Import):
             source_org: str = 'src',
             dest_org: str = 'rpms',
             patch_org: str = 'patch',
+            patch_branch: str = None,
             source_branch_prefix: str = 'c',
             source_branch_suffix: str = '',
             dest_branch_prefix: str = 'r',
@@ -77,6 +78,7 @@ class RpmImport(Import):
                 _dest_branch=dest_branch,
                 _dest_git_protocol=dest_git_protocol,
                 _patch_org=patch_org,
+                _patch_branch=patch_branch,
                 _overwrite_tags=overwrite_tags,
                 _aws_access_key_id=aws_access_key_id,
                 _aws_access_key=aws_access_key,
@@ -196,10 +198,11 @@ class RpmImport(Import):
         patched = False
         branch_yaml_exists = False
 
+        patch_main = self._patch_branch or 'main'
         if main_branch:
-            # it should already be main, but just in case...
-            if patch_repo.active_branch.name != 'main':
-                gitutil.checkout(patch_repo, 'main')
+            # it should already be on the patch branch, but just in case...
+            if patch_repo.active_branch.name != patch_main:
+                gitutil.checkout(patch_repo, patch_main)
 
             pvlog.logger.info('Searching for a main.yml patch file')
             # Look for the main.yml

@@ -52,6 +52,7 @@ class Import:
     _dest_branch_prefix: Optional[str] = 'r'
     _dest_branch_suffix: Optional[str] = ''
     _patch_org: str = 'patch'
+    _patch_branch: Optional[str] = None
     _overwrite_tags: Optional[bool] = False
 
     _dest_lookaside: Optional[str] = '/var/www/html/sources'
@@ -1080,7 +1081,8 @@ class GitHandler:
             pvlog.logger.warning('An unexpected issue occurred: %s', exc)
             sys.exit(2)
 
-        main_ref_check = 'refs/heads/main' in check_patch_repo
+        patch_main_branch = self._patch_branch or 'main'
+        main_ref_check = f'refs/heads/{patch_main_branch}' in check_patch_repo
         branch_ref_check = f'refs/main/{self.dest_branch}' in check_patch_repo
 
         if main_ref_check:
@@ -1088,7 +1090,7 @@ class GitHandler:
                     git_url_path=self.dest_patch_git_url,
                     repo_name=self.rpm_name_replace,
                     to_path=self.dest_patch_clone_path,
-                    branch='main'
+                    branch=patch_main_branch
             )
         elif branch_ref_check:
             dest_patch_repo = gitutil.clone(

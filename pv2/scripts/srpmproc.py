@@ -54,6 +54,8 @@ rpm_parser.add_argument('--dest-branch-suffix', type=str, required=False,
                         default='')
 rpm_parser.add_argument('--dest-patch-org', type=str, required=False,
                         default='patch')
+rpm_parser.add_argument('--dest-patch-branch', type=str, required=False,
+                        default=None)
 
 module_parser.add_argument('--dest-git-protocol', type=str, required=False, default='ssh')
 module_parser.add_argument('--dest-git-user', type=str, required=False, default='git')
@@ -109,6 +111,7 @@ def main():
                 dest_branch_prefix=results.dest_branch_prefix,
                 dest_branch_suffix=results.dest_branch_suffix,
                 patch_org=results.dest_patch_org,
+                patch_branch=results.dest_patch_branch,
                 distprefix=results.distprefix,
                 distcustom=results.distcustom,
                 aws_access_key_id=results.aws_access_key_id,
