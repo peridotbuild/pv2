@@ -588,9 +588,9 @@ class DeleteFile(Action):
         for i, line in enumerate(metadata):
             if re.match(rf'[0-9a-f]+\s+{filename}', line):
                 del metadata[i]
-                break
+                return
 
-            raise err.NotAppliedError(f'Delete File: {filename} not found in metadata')
+        pvlog.logger.warning('Delete File: %s not found in metadata, skipping', filename)
 
     def execute(self, package_path: Path):
         """
@@ -599,22 +599,18 @@ class DeleteFile(Action):
         filename = Path(package_path) / self.data['filename']
         metadata_file = package_path / f'.{package_path.name}.metadata'
 
-        if not metadata_file.exists():
-            raise err.FileNotFound('metadata file not found')
-
-        pvlog.logger.info("Reading in metadata file")
-        metadata_file_data = generic.read_file_to_list(metadata_file)
-
         pvlog.logger.info("Deleting file from package: %s", filename.name)
-        try:
-            if filename.exists():
-                filename.unlink()
-                pvlog.logger.info("%s deleted", filename.name)
-        except FileNotFoundError:
-            self.__delete_from_metadata(filename.name, metadata_file_data)
-            pvlog.logger.info("%s deleted from metadata", filename.name)
 
-        generic.write_file_from_list(metadata_file, metadata_file_data)
+        if filename.exists():
+            filename.unlink()
+            pvlog.logger.info("%s deleted", filename.name)
+        else:
+            pvlog.logger.warning("%s not found, skipping", filename.name)
+
+        if metadata_file.exists():
+            metadata_file_data = generic.read_file_to_list(metadata_file)
+            self.__delete_from_metadata(filename.name, metadata_file_data)
+            generic.write_file_from_list(metadata_file, metadata_file_data)
 
 class ReplaceFile(Action):
     """
