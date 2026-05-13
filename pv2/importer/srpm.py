@@ -90,7 +90,7 @@ class SrpmImport(Import):
             self._package = self._package.replace('+', 'plus')
 
         if not release:
-            self._release = self.__get_srpm_release_version
+            self._release = self.__get_srpm_release_version()
 
             if not self._release:
                 raise err.RpmInfoError(f'The dist tag does not conform to .{self.distprefix}X')
@@ -212,6 +212,8 @@ class SrpmImport(Import):
         if label:
             try:
                 stream_version = label.split(":")[1]
+                if "next" in stream_version:
+                    stream_version = f'rhel{self.release_ver}'
                 branch = f'{branch}-stream-{stream_version}'
                 pvlog.logger.info('Appears to be a module package, using branch name: %s', branch)
             except IndexError:
