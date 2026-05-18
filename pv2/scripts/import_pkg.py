@@ -3,7 +3,9 @@
 # stream gitlab)
 
 import argparse
+import sys
 import pv2.importer as importutil
+from pv2.util import fileutil, log as pvlog, uploader as upload
 
 parser = argparse.ArgumentParser(description="Importer Utility")
 subparser = parser.add_subparsers(dest='cmd')
@@ -11,6 +13,9 @@ subparser.required = True
 
 rpm_parser = subparser.add_parser('rpm')
 git_parser = subparser.add_parser('git')
+files_parser = subparser.add_parser(
+        'files',
+        help='Upload arbitrary files to the S3 lookaside, keyed by sha256')
 
 rpm_parser.add_argument('--dest-gituser', type=str, required=False, default='git')
 rpm_parser.add_argument('--dest-githost', type=str, required=True)
@@ -65,6 +70,15 @@ git_parser.add_argument('--aws-bucket', type=str, required=False, default=None)
 git_parser.add_argument('--aws-use-ssl', action='store_true')
 git_parser.add_argument('--aws-region', type=str, required=False, default=None)
 git_parser.add_argument('--overwrite-tag', action='store_true')
+
+files_parser.add_argument('--aws-access-key-id', type=str, required=False, default=None)
+files_parser.add_argument('--aws-access-key', type=str, required=False, default=None)
+files_parser.add_argument('--aws-bucket', type=str, required=True)
+files_parser.add_argument('--aws-region', type=str, required=False, default=None)
+files_parser.add_argument('--aws-use-ssl', action='store_true')
+files_parser.add_argument('--overwrite', action='store_true',
+                          help='Re-upload even if the sha256 key already exists')
+files_parser.add_argument('files', nargs='+', help='Files to upload')
 
 results = parser.parse_args()
 command = parser.parse_args().cmd
@@ -124,6 +138,24 @@ def main():
                 overwrite_tags=results.overwrite_tag,
         )
         classy.pkg_import()
+    elif command == 'files':
+        for path in results.files:
+            sha = fileutil.get_checksum(path)
+            exists = upload.file_exists_s3(
+                    results.aws_bucket, sha,
+                    results.aws_access_key_id, results.aws_access_key,
+                    results.aws_use_ssl, results.aws_region)
+            if exists and not results.overwrite:
+                pvlog.logger.info('%s already in bucket as %s, skipping', path, sha)
+            else:
+                if exists:
+                    pvlog.logger.warning('Overwriting %s', sha)
+                upload.upload_to_s3(
+                        path, results.aws_bucket,
+                        results.aws_access_key_id, results.aws_access_key,
+                        results.aws_use_ssl, results.aws_region,
+                        dest_name=sha)
+            sys.stdout.write(f'{sha}  {path}\n')
     else:
         print('Unknown command')
 
